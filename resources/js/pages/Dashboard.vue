@@ -22,14 +22,14 @@ const breadcrumbs: BreadcrumbItem[] = [
                     <p class="text-sm text-red-500">Home</p>
                 </div>
                 <div class="relative aspect-video overflow-hidden rounded-xl border border-sidebar-border/70 dark:border-sidebar-border">
-                    <PlaceholderPattern />
+                    <p>ppp</p>
                 </div>
                 <div class="relative aspect-video overflow-hidden rounded-xl border border-sidebar-border/70 dark:border-sidebar-border">
-                    <PlaceholderPattern />
+                    <p>ha?</p>
                 </div>
             </div>
             <div class="relative min-h-[100vh] flex-1 rounded-xl border border-sidebar-border/70 md:min-h-min dark:border-sidebar-border">
-                <PlaceholderPattern />
+                <p>what is?!</p>
             </div>
         </div>
     </AppLayout>

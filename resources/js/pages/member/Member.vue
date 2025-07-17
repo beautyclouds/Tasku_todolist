@@ -6,30 +6,30 @@ import PlaceholderPattern from '@/components/PlaceholderPattern.vue';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
-        title: 'Board',
-        href: '/Index',
+        title: 'Member',
+        href: '/member',
     },
 ];
 </script>
 
 <template>
-    <Head title="Board" />
+    <Head title="Member" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
         <div class="flex h-full flex-1 flex-col gap-4 rounded-xl p-4 overflow-x-auto">
             <div class="grid auto-rows-min gap-4 md:grid-cols-3">
                 <div class="relative aspect-video overflow-hidden rounded-xl border border-sidebar-border/70 dark:border-sidebar-border">
-                    <p class="text-sm text-red-500">Board</p>
+                    <p class="text-sm text-red-500">Member</p>
                 </div>
                 <div class="relative aspect-video overflow-hidden rounded-xl border border-sidebar-border/70 dark:border-sidebar-border">
-                    <p>www</p>
+                    <p>ha?</p>
                 </div>
                 <div class="relative aspect-video overflow-hidden rounded-xl border border-sidebar-border/70 dark:border-sidebar-border">
-                    <p>jjj</p>
+                    <p>kwjk</p>
                 </div>
             </div>
             <div class="relative min-h-[100vh] flex-1 rounded-xl border border-sidebar-border/70 md:min-h-min dark:border-sidebar-border">
-                <p>anjay</p>
+                <p>asbjsbkw</p>
             </div>
         </div>
     </AppLayout>

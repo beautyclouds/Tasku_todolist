@@ -5,8 +5,9 @@ import NavUser from '@/components/NavUser.vue';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
 import { type NavItem } from '@/types';
 import { Link } from '@inertiajs/vue3';
-import { BookOpen, Folder, LayoutGrid } from 'lucide-vue-next';
+import { BookOpen, Folder, LayoutGrid, Users } from 'lucide-vue-next';
 import AppLogo from './AppLogo.vue';
+import Member from '@/pages/member/Member.vue';
 
 const mainNavItems: NavItem[] = [
     {
@@ -16,9 +17,14 @@ const mainNavItems: NavItem[] = [
     },
     {
         title:'Board',
-        href:'#',
-        icon:BookOpen
-    }
+        href:'/board',
+        icon: BookOpen,
+    },
+    {
+        title:'Member',
+        href:'/member',
+        icon: Users,
+    },
 ];
 
 const footerNavItems: NavItem[] = [
@@ -32,6 +38,7 @@ const footerNavItems: NavItem[] = [
         href: 'https://laravel.com/docs/starter-kits#vue',
         icon: BookOpen,
     },
+    
 ];
 </script>
 

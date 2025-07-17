@@ -1,54 +1,81 @@
 <script setup lang="ts">
 import InputError from '@/components/InputError.vue';
 import TextLink from '@/components/TextLink.vue';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import AuthLayout from '@/layouts/AuthLayout.vue';
 import { Head, useForm } from '@inertiajs/vue3';
-import { LoaderCircle } from 'lucide-vue-next';
+import { LoaderCircle, Mail } from 'lucide-vue-next';
+import { Link } from '@inertiajs/vue3';
+
 
 defineProps<{
-    status?: string;
+  status?: string;
 }>();
 
 const form = useForm({
-    email: '',
+  email: '',
 });
 
 const submit = () => {
-    form.post(route('password.email'));
+  form.post(route('password.email'));
 };
 </script>
 
 <template>
-    <AuthLayout title="Forgot password" description="Enter your email to receive a password reset link">
-        <Head title="Forgot password" />
+  <div class="flex min-h-screen font-['Poppins']">
+    <!-- LEFT SIDE -->
+    <div class="w-[30%] bg-cover bg-center relative" style="background-image: url('/img/bgregis.jpg')">
+    </div>
 
-        <div v-if="status" class="mb-4 text-center text-sm font-medium text-green-600">
-            {{ status }}
+    <!-- RIGHT SIDE -->
+    <div class="w-[70%] flex flex-col justify-center items-center px-8 bg-white">
+      <img src="/img/logo-taskula.png" alt="Logo" class="w-35 mb-2" />
+
+      <!-- Title -->
+      <h2 class="text-3xl font-semibold text-transparent bg-clip-text bg-gradient-to-r from-[#113f67] to-[#A5BBC9] mb-6 tracking-wide">
+        FORGOT PASSWORD
+      </h2>
+
+      <Head title="Forgot Password" />
+
+      <div v-if="status" class="mb-4 text-center text-sm font-medium text-green-600">
+        {{ status }}
+      </div>
+
+      <form @submit.prevent="submit" class="w-full max-w-sm space-y-4">
+        <!-- Email -->
+        <div class="relative">
+          <Mail class="absolute left-3 top-3 text-[#113f67] w-5 h-5" />
+          <input
+            v-model="form.email"
+            type="email"
+            placeholder="Email"
+            required
+            autocomplete="off"
+            autofocus
+            class="pl-10 w-full border border-[#113f67] rounded-md py-2 px-3 focus:outline-none"
+          />
+          <InputError :message="form.errors.email" />
         </div>
 
-        <div class="space-y-6">
-            <form @submit.prevent="submit">
-                <div class="grid gap-2">
-                    <Label for="email">Email address</Label>
-                    <Input id="email" type="email" name="email" autocomplete="off" v-model="form.email" autofocus placeholder="email@example.com" />
-                    <InputError :message="form.errors.email" />
-                </div>
+        <!-- Submit -->
+        <button
+          type="submit"
+          :disabled="form.processing"
+          class="bg-[#113f67] text-white font-semibold w-full py-2 rounded-md hover:bg-blue-900 transition duration-200"
+        >
+          <span v-if="form.processing" class="flex items-center justify-center gap-2">
+            <LoaderCircle class="w-4 h-4 animate-spin" />
+            Sending...
+          </span>
+          <span v-else>Email password reset link</span>
+        </button>
+      </form>
 
-                <div class="my-6 flex items-center justify-start">
-                    <Button class="w-full" :disabled="form.processing">
-                        <LoaderCircle v-if="form.processing" class="h-4 w-4 animate-spin" />
-                        Email password reset link
-                    </Button>
-                </div>
-            </form>
-
-            <div class="space-x-1 text-center text-sm text-muted-foreground">
-                <span>Or, return to</span>
-                <TextLink :href="route('login')">log in</TextLink>
-            </div>
-        </div>
-    </AuthLayout>
+      <!-- Back to login -->
+      <div class="mt-4 text-sm text-muted-foreground text-center">
+        Or, return to
+        <TextLink :href="route('login')" class="text-[#113f67] hover:underline">log in</TextLink>
+      </div>
+    </div>
+  </div>
 </template>
+

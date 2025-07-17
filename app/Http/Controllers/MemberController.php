@@ -6,10 +6,10 @@ use Illuminate\Http\Request;
 
 use Inertia\Inertia;
 
-class BordController extends Controller
+class MemberController extends Controller
 {
     //
     public function index(){
-        return Inertia::render('board/Index');
+        return Inertia::render('member/Member');
     }
 }

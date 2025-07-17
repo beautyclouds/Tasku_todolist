@@ -1,81 +1,76 @@
 <script setup lang="ts">
-import InputError from '@/components/InputError.vue';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import AuthLayout from '@/layouts/AuthLayout.vue';
-import { Head, useForm } from '@inertiajs/vue3';
+import TextLink from '@/components/TextLink.vue';
+import { Head, useForm, router } from '@inertiajs/vue3';
 import { LoaderCircle } from 'lucide-vue-next';
 
-interface Props {
-    token: string;
-    email: string;
-}
+defineProps<{
+  status?: string;
+}>();
 
-const props = defineProps<Props>();
-
-const form = useForm({
-    token: props.token,
-    email: props.email,
-    password: '',
-    password_confirmation: '',
-});
+const form = useForm({});
 
 const submit = () => {
-    form.post(route('password.store'), {
-        onFinish: () => {
-            form.reset('password', 'password_confirmation');
-        },
-    });
+  form.post(route('verification.send'));
 };
 </script>
 
 <template>
-    <AuthLayout title="Reset password" description="Please enter your new password below">
-        <Head title="Reset password" />
+  <div class="flex min-h-screen font-['Poppins']">
+    <!-- LEFT SIDE -->
+    <div class="w-[30%] bg-cover bg-center relative" style="background-image: url('/img/bgregis.jpg')">
+    </div>
 
-        <form @submit.prevent="submit">
-            <div class="grid gap-6">
-                <div class="grid gap-2">
-                    <Label for="email">Email</Label>
-                    <Input id="email" type="email" name="email" autocomplete="email" v-model="form.email" class="mt-1 block w-full" readonly />
-                    <InputError :message="form.errors.email" class="mt-2" />
-                </div>
+    <!-- RIGHT SIDE -->
+    <div class="w-[70%] flex flex-col justify-center items-center px-8 bg-white">
+      <!-- Logo -->
+      <img src="/img/logo-taskula.png" alt="Logo" class="w-35 mb-2" />
 
-                <div class="grid gap-2">
-                    <Label for="password">Password</Label>
-                    <Input
-                        id="password"
-                        type="password"
-                        name="password"
-                        autocomplete="new-password"
-                        v-model="form.password"
-                        class="mt-1 block w-full"
-                        autofocus
-                        placeholder="Password"
-                    />
-                    <InputError :message="form.errors.password" />
-                </div>
+      <!-- Title -->
+      <h2 class="text-3xl font-semibold text-transparent bg-clip-text bg-gradient-to-r from-[#113f67] to-[#A5BBC9] mb-6 tracking-wide">
+        VERIVY EMAIL
+      </h2>
 
-                <div class="grid gap-2">
-                    <Label for="password_confirmation"> Confirm Password </Label>
-                    <Input
-                        id="password_confirmation"
-                        type="password"
-                        name="password_confirmation"
-                        autocomplete="new-password"
-                        v-model="form.password_confirmation"
-                        class="mt-1 block w-full"
-                        placeholder="Confirm password"
-                    />
-                    <InputError :message="form.errors.password_confirmation" />
-                </div>
+      <Head title="Email verification" />
 
-                <Button type="submit" class="mt-4 w-full" :disabled="form.processing">
-                    <LoaderCircle v-if="form.processing" class="h-4 w-4 animate-spin" />
-                    Reset password
-                </Button>
-            </div>
-        </form>
-    </AuthLayout>
+      <!-- Instruction -->
+      <div class="text-center text-sm text-gray-700 max-w-md mb-6">
+        Please verify your email address by clicking on the link we just emailed to you.
+        If you didn’t receive the email, we will gladly send you another.
+      </div>
+
+      <!-- Status Message -->
+      <div
+        v-if="status === 'verification-link-sent'"
+        class="mb-4 text-center text-sm font-medium text-green-600"
+      >
+        A new verification link has been sent to the email address you provided during registration.
+      </div>
+
+      <!-- Form -->
+      <form @submit.prevent="submit" class="w-full max-w-sm space-y-4 text-center">
+        <button
+          type="submit"
+          :disabled="form.processing"
+          class="bg-[#113f67] text-white font-semibold w-full py-2 rounded-md hover:bg-blue-900 transition duration-200"
+        >
+          <span v-if="form.processing" class="flex items-center justify-center gap-2">
+            <LoaderCircle class="w-4 h-4 animate-spin" />
+            Sending...
+          </span>
+          <span v-else>Resend verification email</span>
+        </button>
+
+        <!-- Logout -->
+        <TextLink
+          :href="route('logout')"
+          method="post"
+          as="button"
+          class="block mx-auto text-sm text-[#113f67] underline underline-offset-4"
+        >
+          Log out
+        </TextLink>
+      </form>
+    </div>
+  </div>
 </template>
+
