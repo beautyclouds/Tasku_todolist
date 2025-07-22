@@ -9,12 +9,24 @@ Route::get('/', function () {
     return Inertia::render('Welcome');
 })->name('home');
 
-Route::get('dashboard', function () {
+// Dashboard
+Route::get('/dashboard', function () {
     return Inertia::render('Dashboard');
 })->middleware(['auth', 'verified'])->name('dashboard');
 
-Route::get('/board', [BordController::class, 'index'])->middleware(['auth', 'verified'])->name('board');
+// Board Routes
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::get('/board', [BordController::class, 'index'])->name('board');
+    Route::get('/board/{id}', [BordController::class, 'show'])->name('board.show');
+    Route::post('/board/create', [BordController::class, 'store']);
+    Route::put('/board/{id}', [BordController::class, 'update']);
+    Route::delete('/board/{id}', [BordController::class, 'destroy']);
+    Route::post('/board/{id}/tasks', [BordController::class, 'addTask']);
+    Route::post('/board/tasks/{id}/toggle', [BordController::class, 'toggleTask'])->name('task.toggle');
+});
 
+
+// Member
 Route::get('/member', [MemberController::class, 'index'])->middleware(['auth', 'verified'])->name('member');
 
 require __DIR__.'/settings.php';
