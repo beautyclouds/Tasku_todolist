@@ -13,6 +13,7 @@ const props = defineProps<{
     deadline: string
     priority: string
     status: string
+    members?: { id: number; name: string; photo: string | null }[]
   }[]
 }>()
 
@@ -20,50 +21,52 @@ const pendingTasks = computed(() => props.cards.filter(card => card.status === '
 const onProgressTasks = computed(() => props.cards.filter(card => card.status === 'In Progress'))
 const completedTasks = computed(() => props.cards.filter(card => card.status === 'Completed'))
 
-// Modal
 const showModal = ref(false)
 const isEditing = ref(false)
 const newCard = ref({
-  id: null,
+  id: null as number | null,
   title: '',
   deadline: '',
   priority: 'Normal',
 })
 
-// Open Create
+// Validasi form supaya tombol Save hanya aktif kalau title dan deadline diisi
+const isFormValid = computed(() => {
+  return newCard.value.title.trim() !== '' && newCard.value.deadline !== ''
+})
+
 const openCreateModal = () => {
   isEditing.value = false
   newCard.value = { id: null, title: '', deadline: '', priority: 'Normal' }
   showModal.value = true
 }
 
-// Open Edit
 const openEditModal = (card: any) => {
   isEditing.value = true
   newCard.value = { ...card }
   showModal.value = true
 }
 
-// Submit (Create/Update)
 const submitCard = () => {
+  const url = isEditing.value ? `/board/${newCard.value.id}` : '/board/create'
+
   if (isEditing.value) {
-    router.put(`/board/${newCard.value.id}`, newCard.value, {
+    router.put(url, newCard.value, {
       onSuccess: () => {
         showModal.value = false
         router.reload()
-      },
+      }
     })
   } else {
-    router.post('/board/create', newCard.value, {
+    router.post(url, newCard.value, {
       onSuccess: () => {
         showModal.value = false
         router.reload()
-      },
+      }
     })
   }
 }
 
-// Delete
 const deleteCard = (id: number) => {
   if (confirm('Are you sure you want to delete this card?')) {
     router.delete(`/board/${id}`, {
@@ -72,16 +75,21 @@ const deleteCard = (id: number) => {
   }
 }
 
-// Go to detail
 const goToCard = (id: number) => {
   router.get(`/board/${id}`)
+}
+
+const isOverdue = (deadline: string): boolean => {
+  const today = new Date()
+  const due = new Date(deadline)
+  return due.getTime() < today.getTime()
 }
 </script>
 
 <template>
   <Head title="Board" />
   <AppLayout :breadcrumbs="breadcrumbs">
-    <!-- Top -->
+    <!-- Top Bar -->
     <div class="flex justify-between items-center mb-6 px-6">
       <div class="relative w-full max-w-8xl">
         <input
@@ -95,7 +103,7 @@ const goToCard = (id: number) => {
       </div>
     </div>
 
-    <!-- Content -->
+    <!-- Board Content -->
     <div class="flex flex-col gap-4 p-6 bg-[#f2f2f2] min-h-screen">
       <div class="flex justify-between items-center">
         <input
@@ -125,9 +133,29 @@ const goToCard = (id: number) => {
                 :key="task.id"
                 :class="[section.bg, 'rounded-md p-3 shadow-sm hover:bg-opacity-80 transition']"
               >
-                <p class="font-semibold mb-2 cursor-pointer" @click="goToCard(task.id)">{{ task.title }}</p>
-                <div class="text-sm text-gray-600 mb-1">📅 {{ task.deadline }}</div>
+                <p class="font-semibold mb-2 cursor-pointer" @click="goToCard(task.id)">
+                  {{ task.title }}
+                </p>
+
+                <!-- ✅ Member Avatars -->
+                <div v-if="task.members && task.members.length" class="flex items-center gap-1 mb-2">
+                  <span class="text-xs text-gray-500">👥</span>
+                  <div class="flex -space-x-2">
+                    <img
+                      v-for="member in task.members"
+                      :key="member.id"
+                      :src="member.photo ? `/storage/${member.photo}` : `https://ui-avatars.com/api/?name=${member.name}`"
+                      :alt="member.name"
+                      class="w-6 h-6 rounded-full border-2 border-white shadow object-cover"
+                    />
+                  </div>
+                </div>
+
+                <div v-if="task.status !== 'Completed' && isOverdue(task.deadline)" class="text-xs text-red-600 font-semibold mb-1">
+                  ⚠️ Overdue
+                </div>
                 <div class="text-xs text-gray-500 mb-2">{{ task.priority }} Priority</div>
+
                 <div class="flex gap-2">
                   <button @click="openEditModal(task)" class="text-xs text-blue-600 hover:underline">Edit</button>
                   <button @click="deleteCard(task.id)" class="text-xs text-red-600 hover:underline">Delete</button>
@@ -154,7 +182,11 @@ const goToCard = (id: number) => {
         </div>
         <div class="flex justify-end mt-4 gap-2">
           <button @click="showModal = false" class="px-4 py-2 bg-gray-300 rounded">Cancel</button>
-          <button @click="submitCard" class="px-4 py-2 bg-[#033A63] text-white rounded">
+          <button 
+            @click="submitCard" 
+            :disabled="!isFormValid"
+            class="px-4 py-2 bg-[#033A63] text-white rounded disabled:opacity-50 disabled:cursor-not-allowed"
+          >
             {{ isEditing ? 'Update' : 'Save' }}
           </button>
         </div>

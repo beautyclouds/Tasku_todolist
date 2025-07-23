@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\BoardCard;
+use App\Models\Member;
 use App\Models\SubTask;
 use Inertia\Inertia;
 
@@ -11,7 +12,9 @@ class BordController extends Controller
 {
     public function index()
     {
-        $cards = BoardCard::orderBy('created_at', 'desc')->get();
+        $cards = BoardCard::with('members')
+            ->orderBy('created_at', 'desc')
+            ->get();
 
         return Inertia::render('board/Index', [
             'cards' => $cards,
@@ -20,10 +23,12 @@ class BordController extends Controller
 
     public function show($id)
     {
-        $card = BoardCard::with('tasks')->findOrFail($id);
+        $card = BoardCard::with(['tasks', 'members'])->findOrFail($id);
+        $allMembers = Member::all();
 
         return Inertia::render('board/Show', [
             'card' => $card,
+            'allMembers' => $allMembers,
         ]);
     }
 
@@ -39,7 +44,7 @@ class BordController extends Controller
             'title' => $request->title,
             'deadline' => $request->deadline,
             'priority' => $request->priority,
-            'status' => 'Pending', // Default status
+            'status' => 'Pending',
         ]);
 
         return redirect()->route('board');
@@ -54,7 +59,11 @@ class BordController extends Controller
         ]);
 
         $card = BoardCard::findOrFail($id);
-        $card->update($request->only('title', 'deadline', 'priority'));
+        $card->update([
+            'title' => $request->title,
+            'deadline' => $request->deadline,
+            'priority' => $request->priority,
+        ]);
 
         return redirect()->route('board');
     }
@@ -74,9 +83,9 @@ class BordController extends Controller
         ]);
 
         $card = BoardCard::findOrFail($id);
-
         $card->tasks()->create([
             'name' => $request->name,
+            'is_done' => false,
         ]);
 
         $this->updateCardStatus($card);
@@ -101,16 +110,32 @@ class BordController extends Controller
         $total = $card->tasks()->count();
         $completed = $card->tasks()->where('is_done', true)->count();
 
-        if ($total === 0) {
-            $card->status = 'Pending';
-        } elseif ($completed === 0) {
+        if ($total === 0 || $completed === 0) {
             $card->status = 'Pending';
         } elseif ($completed < $total) {
             $card->status = 'In Progress';
-        } elseif ($completed === $total) {
+        } else {
             $card->status = 'Completed';
         }
 
         $card->save();
+    }
+
+    public function inviteMember(Request $request, $cardId)
+    {
+        $request->validate([
+            'name' => 'required|string|exists:members,name',
+        ]);
+
+        $card = BoardCard::findOrFail($cardId);
+        $member = Member::where('name', $request->name)->first();
+
+        if (!$member) {
+            return back()->withErrors(['name' => 'Member not found.']);
+        }
+
+        $card->members()->syncWithoutDetaching([$member->id]);
+
+        return back()->with('success', 'Member invited!');
     }
 }

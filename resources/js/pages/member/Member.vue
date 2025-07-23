@@ -1,77 +1,56 @@
 <script setup lang="ts">
 import AppLayout from '@/layouts/AppLayout.vue'
-import { type BreadcrumbItem } from '@/types'
-import { Head } from '@inertiajs/vue3'
+import { Head, useForm, router } from '@inertiajs/vue3'
 import { ref } from 'vue'
 
-const breadcrumbs: BreadcrumbItem[] = [
-  {
-    title: 'Member',
-    href: '/member',
-  },
-]
+defineProps<{
+  members: { id: number; name: string; photo: string | null; created_at: string }[]
+}>()
 
-// Data Member
-const members = ref<
-  { name: string; id: string; joined: string; photo: string }[]
->([])
-
-// Modal & Form
 const showModal = ref(false)
-const newMember = ref({
+
+const form = useForm({
   name: '',
-  photoFile: null as File | null,
-  photoUrl: '',
+  photo: null as File | null,
 })
 
-// Fungsi Buat ID Angka
-function generateId() {
-  return String(members.value.length + 1)
-}
-
-// Format tanggal hari ini
-function formatDate() {
-  const now = new Date()
-  const options: Intl.DateTimeFormatOptions = {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-  }
-  return now.toLocaleDateString('en-GB', options)
-}
-
-// Tambah Member
 function addMember() {
-  members.value.push({
-    name: newMember.value.name,
-    photo: newMember.value.photoUrl || '',
-    id: generateId(),
-    joined: formatDate(),
+  form.post(route('member.store'), {
+    forceFormData: true,
+    onSuccess: () => {
+      showModal.value = false
+      form.reset()
+      router.reload({ only: ['members'] }) // refresh list
+    },
   })
-  closeModal()
-}
-
-// Ambil file foto
-function handlePhotoUpload(event: Event) {
-  const file = (event.target as HTMLInputElement).files?.[0]
-  if (file) {
-    newMember.value.photoFile = file
-    newMember.value.photoUrl = URL.createObjectURL(file)
-  }
 }
 
 function closeModal() {
   showModal.value = false
-  newMember.value = { name: '', photoFile: null, photoUrl: '' }
+  form.reset()
+}
+
+function handleFileUpload(e: Event) {
+  const target = e.target as HTMLInputElement
+  if (target.files?.length) {
+    form.photo = target.files[0]
+  }
+}
+
+function deleteMember(id: number) {
+  if (confirm('Yakin ingin menghapus member ini?')) {
+    router.delete(route('member.destroy', id), {
+      onSuccess: () => router.reload({ only: ['members'] }),
+    })
+  }
 }
 </script>
 
 <template>
   <Head title="Member" />
-  <AppLayout :breadcrumbs="breadcrumbs">
+  <AppLayout :breadcrumbs="[{ title: 'Member', href: '/member' }]">
     <!-- Top Bar -->
     <div class="flex justify-between items-center mb-6 px-6">
-      <!-- Search -->
       <div class="relative w-full max-w-8xl">
         <input
           type="text"
@@ -82,8 +61,6 @@ function closeModal() {
           <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35M11 19a8 8 0 100-16 8 8 0 000 16z" />
         </svg>
       </div>
-
-      <!-- Profile -->
       <div class="ml-4 flex items-center">
         <img src="https://ui-avatars.com/api/?name=Indah&background=113f67&color=fff&size=40" alt="Profile" class="w-10 h-10 rounded-full object-cover shadow" />
       </div>
@@ -111,21 +88,22 @@ function closeModal() {
               <th class="py-3 px-6">Name</th>
               <th class="py-3 px-6">ID</th>
               <th class="py-3 px-6">Joined</th>
+              <th class="py-3 px-6 text-right">Action</th>
             </tr>
           </thead>
           <tbody class="text-sm">
             <tr
-              v-for="(member, index) in members"
-              :key="index"
+              v-for="member in members"
+              :key="member.id"
               class="border-t border-gray-200 hover:bg-gray-50"
             >
               <td class="py-3 px-6">
                 <div class="w-10 h-10 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center">
                   <img
                     v-if="member.photo"
-                    :src="member.photo"
-                    alt="Photo"
-                    class="w-full h-full object-cover"
+                    :src="`/storage/${member.photo}`"
+                    alt="Profile photo"
+                    class="w-10 h-10 rounded-full object-cover"
                   />
                   <svg
                     v-else
@@ -141,7 +119,14 @@ function closeModal() {
               </td>
               <td class="py-3 px-6 text-[#113f67] font-medium">{{ member.name }}</td>
               <td class="py-3 px-6 text-[#113f67]">{{ member.id }}</td>
-              <td class="py-3 px-6 text-[#113f67]">{{ member.joined }}</td>
+              <td class="py-3 px-6 text-[#113f67]">
+                {{ new Date(member.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) }}
+              </td>
+              <td class="py-3 px-6 text-right">
+                <button @click="deleteMember(member.id)" class="text-red-600 hover:underline text-sm">
+                  Hapus
+                </button>
+              </td>
             </tr>
           </tbody>
         </table>
@@ -152,9 +137,9 @@ function closeModal() {
     <div v-if="showModal" class="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50">
       <div class="bg-white rounded-xl p-6 shadow-lg w-full max-w-md">
         <h2 class="text-lg font-semibold text-[#113f67] mb-4">Add New Member</h2>
-        <form @submit.prevent="addMember" class="flex flex-col gap-4">
+        <form @submit.prevent="addMember" class="flex flex-col gap-4" enctype="multipart/form-data">
           <input
-            v-model="newMember.name"
+            v-model="form.name"
             type="text"
             placeholder="Full Name"
             class="rounded-lg border border-gray-300 px-4 py-2"
@@ -162,7 +147,7 @@ function closeModal() {
           />
           <input
             type="file"
-            @change="handlePhotoUpload"
+            @change="handleFileUpload"
             class="rounded-lg border border-gray-300 px-4 py-2"
             accept="image/*"
           />
@@ -170,7 +155,7 @@ function closeModal() {
             <button type="button" @click="closeModal" class="px-4 py-2 bg-gray-200 rounded-lg text-sm">
               Cancel
             </button>
-            <button type="submit" class="px-4 py-2 bg-[#113f67] text-white rounded-lg text-sm">
+            <button type="submit" class="px-4 py-2 bg-[#113f67] text-white rounded-lg text-sm" :disabled="form.processing">
               Add
             </button>
           </div>
