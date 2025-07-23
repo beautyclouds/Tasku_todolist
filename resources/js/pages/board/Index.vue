@@ -150,7 +150,7 @@ const isOverdue = (deadline: string): boolean => {
                     />
                   </div>
                 </div>
-
+                <div class="text-sm text-gray-600 mb-1">📅 {{ task.deadline }}</div>
                 <div v-if="task.status !== 'Completed' && isOverdue(task.deadline)" class="text-xs text-red-600 font-semibold mb-1">
                   ⚠️ Overdue
                 </div>
