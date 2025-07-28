@@ -98,7 +98,7 @@ const isOverdue = (deadline: string): boolean => {
                 />
                 <button
                     @click="openCreateModal"
-                    class="ml-4 rounded-xl bg-[#033A63] px-6 py-2 text-white shadow-md dark:bg-blue-600 dark:hover:bg-blue-500"
+                    class="ml-4 rounded-xl bg-[#033A63] px-6 py-2 text-white shadow-md dark:bg-[#34699A] dark:hover:bg-blue-500"
                 >
                     + Create New
                 </button>

@@ -15,25 +15,29 @@ const submit = () => {
 </script>
 
 <template>
-  <div class="flex min-h-screen font-['Poppins']">
+  <div class="flex min-h-screen font-['Poppins'] dark:bg-gray-900 dark:text-white">
     <!-- LEFT SIDE -->
-    <div class="w-[30%] bg-cover bg-center relative" style="background-image: url('/img/bgregis.jpg')">
-    </div>
+    <div
+      class="w-[30%] bg-cover bg-center relative hidden md:block"
+      style="background-image: url('/img/bgregis.jpg')"
+    ></div>
 
     <!-- RIGHT SIDE -->
-    <div class="w-[70%] flex flex-col justify-center items-center px-8 bg-white">
+    <div class="w-full md:w-[70%] flex flex-col justify-center items-center px-8 bg-white dark:bg-gray-900 transition duration-300">
       <!-- Logo -->
-      <img src="/img/logo-taskula.png" alt="Logo" class="w-35 mb-2" />
+      <img src="/img/logo-taskula.png" alt="Logo" class="w-36 mb-2" />
 
       <!-- Title -->
-      <h2 class="text-3xl font-semibold text-transparent bg-clip-text bg-gradient-to-r from-[#113f67] to-[#A5BBC9] mb-6 tracking-wide">
-        VERIVY EMAIL
+      <h2
+        class="text-3xl font-semibold text-transparent bg-clip-text bg-gradient-to-r from-[#113f67] to-[#A5BBC9] dark:from-blue-300 dark:to-blue-500 mb-6 tracking-wide"
+      >
+        VERIFY EMAIL
       </h2>
 
       <Head title="Email verification" />
 
       <!-- Instruction -->
-      <div class="text-center text-sm text-gray-700 max-w-md mb-6">
+      <div class="text-center text-sm text-gray-700 dark:text-gray-300 max-w-md mb-6">
         Please verify your email address by clicking on the link we just emailed to you.
         If you didn’t receive the email, we will gladly send you another.
       </div>
@@ -41,7 +45,7 @@ const submit = () => {
       <!-- Status Message -->
       <div
         v-if="status === 'verification-link-sent'"
-        class="mb-4 text-center text-sm font-medium text-green-600"
+        class="mb-4 text-center text-sm font-medium text-green-600 dark:text-green-400"
       >
         A new verification link has been sent to the email address you provided during registration.
       </div>
@@ -65,7 +69,7 @@ const submit = () => {
           :href="route('logout')"
           method="post"
           as="button"
-          class="block mx-auto text-sm text-[#113f67] underline underline-offset-4"
+          class="block mx-auto text-sm text-[#113f67] underline underline-offset-4 dark:text-blue-300"
         >
           Log out
         </TextLink>
@@ -73,4 +77,3 @@ const submit = () => {
     </div>
   </div>
 </template>
-
