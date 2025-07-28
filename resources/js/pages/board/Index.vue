@@ -89,20 +89,7 @@ const isOverdue = (deadline: string): boolean => {
 <template>
   <Head title="Board" />
   <AppLayout :breadcrumbs="breadcrumbs">
-    <!-- Top Bar -->
-    <div class="flex justify-between items-center mb-6 px-6">
-      <div class="relative w-full max-w-8xl">
-        <input
-          type="text"
-          placeholder="Search..."
-          class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#113f67]"
-        />
-      </div>
-      <div class="ml-4 flex items-center">
-        <img src="https://ui-avatars.com/api/?name=Indah&background=113f67&color=fff&size=40" alt="Profile" class="w-10 h-10 rounded-full object-cover shadow"/>
-      </div>
-    </div>
-
+    
     <!-- Board Content -->
     <div class="flex flex-col gap-4 p-6 bg-[#f2f2f2] min-h-screen">
       <div class="flex justify-between items-center">

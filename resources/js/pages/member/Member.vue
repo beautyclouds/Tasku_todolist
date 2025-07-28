@@ -49,22 +49,6 @@ function deleteMember(id: number) {
 <template>
   <Head title="Member" />
   <AppLayout :breadcrumbs="[{ title: 'Member', href: '/member' }]">
-    <!-- Top Bar -->
-    <div class="flex justify-between items-center mb-6 px-6">
-      <div class="relative w-full max-w-8xl">
-        <input
-          type="text"
-          placeholder="Search..."
-          class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#113f67]"
-        />
-        <svg class="absolute left-3 top-2.5 h-5 w-5 text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35M11 19a8 8 0 100-16 8 8 0 000 16z" />
-        </svg>
-      </div>
-      <div class="ml-4 flex items-center">
-        <img src="https://ui-avatars.com/api/?name=Indah&background=113f67&color=fff&size=40" alt="Profile" class="w-10 h-10 rounded-full object-cover shadow" />
-      </div>
-    </div>
 
     <div class="flex flex-col gap-6 p-6 bg-[#f2f2f2] min-h-screen">
       <!-- Search + Add Button -->

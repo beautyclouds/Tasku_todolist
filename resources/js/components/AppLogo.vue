@@ -5,7 +5,7 @@
   <div class="flex items-center space-x-2">
     <!-- Logo image -->
     <img
-      src="img/logo-taskula.png"
+      src="/img/logo-taskula.png"
       alt="Logo"
       class="h-10 w-10 rounded-md object-contain"
     />
