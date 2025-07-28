@@ -81,7 +81,7 @@ const deadlineMap = computed(() => {
             </div>
         </div>
 
-        <div class="grid grid-cols-1 gap-6 p-6 font-['Poppins'] lg:grid-cols-12">
+        <div class="grid grid-cols-1 gap-6 p-4 font-['Poppins'] lg:grid-cols-12">
             <!-- LEFT -->
             <div class="flex flex-col gap-6 lg:col-span-8">
                 <!-- Overview -->
@@ -116,7 +116,7 @@ const deadlineMap = computed(() => {
                 <div class="mt-6 rounded-xl border-b bg-white p-6 shadow dark:bg-[#333333] dark:text-white">
                     <div class="mb-4 flex items-center justify-between">
                         <h3 class="text-lg font-semibold text-[#113f67] dark:text-gray-200">Team Members</h3>
-                        <a href="/members" class="text-sm text-blue-600 hover:underline dark:text-gray-200">See more</a>
+                        <a href="/member" class="text-sm text-blue-600 hover:underline dark:text-gray-200">See more</a>
                     </div>
                     <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                         <div
