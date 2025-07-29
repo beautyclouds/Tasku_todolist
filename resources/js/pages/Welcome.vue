@@ -36,6 +36,6 @@
     </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 // Halaman statis, tidak butuh script logic
 </script>
