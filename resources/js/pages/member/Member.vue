@@ -142,7 +142,7 @@ function deleteMember(id: number) {
                         </button>
                         <button
                             type="submit"
-                            class="rounded-lg bg-[#113f67] px-4 py-2 text-sm text-white dark:bg-blue-600 dark:hover:bg-blue-500"
+                            class="rounded-lg bg-[#113f67] px-4 py-2 text-sm text-white dark:bg-[#34699A] dark:hover:bg-blue-500"
                             :disabled="form.processing"
                         >
                             Add

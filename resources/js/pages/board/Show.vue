@@ -106,10 +106,11 @@ const formattedDeadline = computed(() => {
             <div class="mb-6">
                 <h2 class="mb-2 font-semibold dark:text-gray-200">➕ Invite Member</h2>
                 <form @submit.prevent="inviteMember" class="flex items-center gap-2">
-                    <select v-model="inviteForm.name" class="w-full rounded border px-3 py-2 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
-                         
+                    <select
+                        v-model="inviteForm.name"
+                        class="flex-1 rounded border px-3 py-2 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                    >
                         <option value="" disabled>Select a member...</option>
-                         
                         <option
                             v-for="member in props.allMembers"
                             :key="member.id"
@@ -119,7 +120,9 @@ const formattedDeadline = computed(() => {
                             {{ member.name }}
                         </option>
                     </select>
-                    <button class="rounded bg-[#033A63] px-4 py-2 text-white transition hover:bg-[#022d4d] dark:bg-blue-600 dark:hover:bg-blue-500">
+                    <button
+                        class="w-[100px] rounded bg-[#033A63] py-1.5 text-l text-white transition hover:bg-[#022d4d] dark:bg-[#34699A] dark:hover:bg-blue-500"
+                    >
                           Invite
                     </button>
                 </form>
@@ -128,16 +131,16 @@ const formattedDeadline = computed(() => {
             <div>
                 <h2 class="mb-2 font-semibold dark:text-gray-200">📌 Sub Tasks:</h2>
                 <ul class="mb-4 space-y-2 text-gray-800 dark:text-gray-200">
-                     
                     <li v-for="task in props.card.tasks" :key="task.id" class="flex items-center gap-2">
-                           
                         <input
                             type="checkbox"
                             :checked="task.is_done"
                             @change="toggleTask(task.id)"
                             class="h-4 w-4 accent-[#033A63] dark:accent-blue-500"
                         />
-                            <span :class="{ 'text-gray-500 line-through dark:text-gray-400': task.is_done }">{{ task.name }}</span>  
+                        <span :class="{ 'text-gray-500 line-through dark:text-gray-400': task.is_done }">
+                            {{ task.name }}
+                        </span>
                     </li>
                 </ul>
 
@@ -146,9 +149,11 @@ const formattedDeadline = computed(() => {
                         v-model="form.name"
                         type="text"
                         placeholder="Add new task..."
-                        class="w-full rounded border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-[#033A63] focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:ring-blue-500"
+                        class="flex-1 rounded border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-[#033A63] focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:ring-blue-500"
                     />
-                    <button class="rounded bg-[#033A63] px-4 py-2 text-white transition hover:bg-[#022d4d] dark:bg-blue-600 dark:hover:bg-blue-500">
+                    <button
+                        class="w-[100px] rounded bg-[#033A63] py-1.5 text-l text-white transition hover:bg-[#022d4d] dark:bg-[#34699A] dark:hover:bg-blue-500"
+                    >
                           Add
                     </button>
                 </form>
