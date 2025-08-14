@@ -1,4 +1,3 @@
-// ✅ Show.vue
 <script setup lang="ts">
 import AppLayout from '@/layouts/AppLayout.vue';
 import { Head, router, useForm } from '@inertiajs/vue3';
@@ -11,7 +10,7 @@ const props = defineProps<{
         deadline: string;
         priority: string;
         status: string;
-        tasks: { id: number; name: string; is_done: boolean }[];
+        tasks: { id: number; name: string; description?: string | null; is_done: boolean }[];
         members?: { id: number; name: string; photo: string | null }[];
     };
     allMembers: {
@@ -21,7 +20,7 @@ const props = defineProps<{
     }[];
 }>();
 
-const form = useForm({ name: '' });
+const form = useForm({ name: '', description: '' });
 const inviteForm = useForm({ name: '' });
 
 const addSubTask = () => {
@@ -80,25 +79,34 @@ const formattedDeadline = computed(() => {
                 href="/board"
                 class="inline-flex items-center text-3xl font-extrabold text-[#033A63] transition hover:text-[#022d4d] dark:text-blue-400 dark:hover:text-blue-300"
             >
-                  ←
+                ←
             </a>
 
-            <h1 class="mb-2 flex items-center gap-2 text-2xl font-bold text-[#033A63] dark:text-gray-100">📋 {{ props.card.title }}</h1>
+            <h1 class="mb-2 flex items-center gap-2 text-2xl font-bold text-[#033A63] dark:text-gray-100">
+                📋 {{ props.card.title }}
+            </h1>
 
             <p class="mb-1 flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">🗓️ {{ formattedDeadline }}</p>
-            <p class="mb-4 text-sm text-gray-500 dark:text-gray-400">Priority: {{ props.card.priority }} | Status: {{ props.card.status }}</p>
+            <p class="mb-4 text-sm text-gray-500 dark:text-gray-400">
+                Priority: {{ props.card.priority }} | Status: {{ props.card.status }}
+            </p>
 
             <!-- ✅ Show Members -->
             <div v-if="props.card.members && props.card.members.length" class="mb-4">
                 <h2 class="mb-2 font-semibold dark:text-gray-200">👥 Members:</h2>
-                <div class="flex -space-x-2">
-                    <img
+                <div class="flex flex-wrap items-center gap-2">
+                    <div
                         v-for="member in props.card.members"
                         :key="member.id"
-                        :src="member.photo ? `/storage/${member.photo}` : `https://ui-avatars.com/api/?name=${member.name}`"
-                        :alt="member.name"
-                        class="h-8 w-8 rounded-full border-2 border-white shadow dark:border-gray-700"
-                    />
+                        class="flex items-center gap-2 rounded-full bg-gray-100 px-2 py-1 dark:bg-gray-700"
+                    >
+                        <img
+                            :src="member.photo ? `/storage/${member.photo}` : `https://ui-avatars.com/api/?name=${member.name}`"
+                            :alt="member.name"
+                            class="h-8 w-8 rounded-full border-2 border-white shadow dark:border-gray-700"
+                        />
+                        <span class="text-sm font-medium dark:text-gray-200">{{ member.name }}</span>
+                    </div>
                 </div>
             </div>
 
@@ -123,38 +131,50 @@ const formattedDeadline = computed(() => {
                     <button
                         class="w-[100px] rounded bg-[#033A63] py-1.5 text-l text-white transition hover:bg-[#022d4d] dark:bg-[#34699A] dark:hover:bg-blue-500"
                     >
-                          Invite
+                        Invite
                     </button>
                 </form>
             </div>
 
+            <!-- ✅ Sub Tasks -->
             <div>
                 <h2 class="mb-2 font-semibold dark:text-gray-200">📌 Sub Tasks:</h2>
                 <ul class="mb-4 space-y-2 text-gray-800 dark:text-gray-200">
-                    <li v-for="task in props.card.tasks" :key="task.id" class="flex items-center gap-2">
-                        <input
-                            type="checkbox"
-                            :checked="task.is_done"
-                            @change="toggleTask(task.id)"
-                            class="h-4 w-4 accent-[#033A63] dark:accent-blue-500"
-                        />
-                        <span :class="{ 'text-gray-500 line-through dark:text-gray-400': task.is_done }">
-                            {{ task.name }}
-                        </span>
+                    <li v-for="task in props.card.tasks" :key="task.id" class="flex flex-col gap-1">
+                        <div class="flex items-center gap-2">
+                            <input
+                                type="checkbox"
+                                :checked="task.is_done"
+                                @change="toggleTask(task.id)"
+                                class="h-4 w-4 accent-[#033A63] dark:accent-blue-500"
+                            />
+                            <span :class="{ 'text-gray-500 line-through dark:text-gray-400': task.is_done }">
+                                {{ task.name }}
+                            </span>
+                        </div>
+                        <p v-if="task.description" class="ml-6 text-sm text-gray-500 dark:text-gray-400">
+                            {{ task.description }}
+                        </p>
                     </li>
                 </ul>
 
-                <form @submit.prevent="addSubTask" class="flex gap-2">
+                <!-- ✅ Form tambah task -->
+                <form @submit.prevent="addSubTask" class="flex flex-col gap-2">
                     <input
                         v-model="form.name"
                         type="text"
                         placeholder="Add new task..."
                         class="flex-1 rounded border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-[#033A63] focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:ring-blue-500"
                     />
+                    <textarea
+                        v-model="form.description"
+                        placeholder="Add description (optional)"
+                        class="flex-1 rounded border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-[#033A63] focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:ring-blue-500"
+                    ></textarea>
                     <button
                         class="w-[100px] rounded bg-[#033A63] py-1.5 text-l text-white transition hover:bg-[#022d4d] dark:bg-[#34699A] dark:hover:bg-blue-500"
                     >
-                          Add
+                        Add
                     </button>
                 </form>
             </div>

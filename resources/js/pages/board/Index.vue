@@ -2,7 +2,7 @@
 import AppLayout from '@/layouts/AppLayout.vue';
 import { type BreadcrumbItem } from '@/types';
 import { Head, router } from '@inertiajs/vue3';
-import { computed, defineProps, ref } from 'vue';
+import { computed, defineProps, ref, watch } from 'vue';
 
 const breadcrumbs: BreadcrumbItem[] = [{ title: 'Board', href: '/board' }];
 
@@ -14,6 +14,7 @@ const props = defineProps<{
         priority: string;
         status: string;
         members?: { id: number; name: string; photo: string | null }[];
+        subtasks?: { id: number; title: string; is_completed: boolean }[];
     }[];
 }>();
 
@@ -84,6 +85,34 @@ const isOverdue = (deadline: string): boolean => {
     const due = new Date(deadline);
     return due.getTime() < today.getTime();
 };
+
+type NormalizedSubtask = { id: number; title: string; is_completed: boolean };
+const getSubtasks = (task: any): NormalizedSubtask[] => {
+    const raw = (task?.subtasks ?? task?.tasks ?? []) as any[];
+    return raw.map((s) => ({
+        id: s.id,
+        title: (s.title ?? s.name ?? '') as string,
+        is_completed: (s.is_completed ?? s.is_done ?? false) as boolean,
+    }));
+};
+
+// Update status card saat checkbox subtask diubah
+const toggleSubtask = (card: any, subtask: any) => {
+    subtask.is_completed = !subtask.is_completed;
+
+    router.put(`/board/${card.id}/subtasks`, {
+        subtasks: card.subtasks
+    }, {
+        onSuccess: () => {
+            // opsional: reload page
+            // router.reload();
+        },
+        onError: (errors) => {
+            console.error(errors);
+        }
+    });
+};
+
 </script>
 
 <template>
@@ -122,19 +151,21 @@ const isOverdue = (deadline: string): boolean => {
                             <div
                                 v-for="task in section.items"
                                 :key="task.id"
-                                :class="[
-                                    section.bg,
-                                    'hover:bg-opacity-80 rounded-md p-3 shadow-sm transition',
-                                    {
-                                        'dark:bg-gray-700 dark:hover:bg-gray-600': task.status === 'Pending',
-                                        'dark:bg-gray-600 dark:hover:bg-gray-500': task.status === 'In Progress',
-                                        'dark:bg-gray-500 dark:hover:bg-gray-400': task.status === 'Completed',
-                                    },
-                                ]"
+                                :class="[section.bg, 'hover:bg-opacity-80 rounded-md p-3 shadow-sm transition']"
                             >
                                 <p class="mb-2 cursor-pointer font-semibold dark:text-gray-100" @click="goToCard(task.id)">
                                     {{ task.title }}
                                 </p>
+
+                                <!-- Subtasks -->
+                                <ul v-if="getSubtasks(task).length" class="mb-2 text-xs space-y-1">
+                                    <li v-for="sub in getSubtasks(task)" :key="sub.id" class="flex items-center gap-2">
+                                        <input type="checkbox" :checked="sub.is_completed" disabled />
+                                        <span :class="{ 'line-through text-gray-400': sub.is_completed }">
+                                            {{ sub.title }}
+                                        </span>
+                                    </li>
+                                </ul>
 
                                 <div v-if="task.members && task.members.length" class="mb-2 flex items-center gap-1">
                                     <span class="text-xs text-gray-500 dark:text-gray-400">👥</span>
@@ -178,21 +209,27 @@ const isOverdue = (deadline: string): boolean => {
             </div>
         </div>
 
+        <!-- Modal tetap sama -->
         <div v-if="showModal" class="bg-opacity-50 fixed inset-0 z-50 flex items-center justify-center bg-black">
             <div class="w-full max-w-md rounded-xl bg-white p-6 shadow-lg dark:bg-gray-800 dark:text-white">
                 <h2 class="mb-4 text-lg font-semibold text-[#033A63] dark:text-gray-200">{{ isEditing ? 'Edit Card' : 'Create New Board' }}</h2>
                 <div class="space-y-3">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Judul</label>
                     <input
                         v-model="newCard.title"
                         type="text"
-                        placeholder="Title"
+                        placeholder="Masukkan Judul"
                         class="w-full rounded border px-3 py-2 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400"
                     />
+
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Deadline</label>
                     <input
                         v-model="newCard.deadline"
                         type="datetime-local"
                         class="w-full rounded border px-3 py-2 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
                     />
+
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Status Prioritas</label>
                     <select v-model="newCard.priority" class="w-full rounded border px-3 py-2 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
                         <option value="Low">Low</option>
                         <option value="Normal">Normal</option>

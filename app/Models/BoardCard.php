@@ -14,7 +14,7 @@ class BoardCard extends Model
 
     public function tasks()
     {
-        return $this->hasMany(SubTask::class);
+        return $this->hasMany(SubTask::class, 'board_card_id');
     }
 
     public function members()

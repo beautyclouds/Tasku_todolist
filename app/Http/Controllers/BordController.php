@@ -12,7 +12,7 @@ class BordController extends Controller
 {
     public function index()
     {
-        $cards = BoardCard::with('members')
+        $cards = BoardCard::with(['members', 'tasks'])
             ->orderBy('created_at', 'desc')
             ->get();
 
@@ -76,15 +76,18 @@ class BordController extends Controller
         return redirect()->route('board');
     }
 
+    // ✅ Add Task dengan deskripsi
     public function addTask(Request $request, $id)
     {
         $request->validate([
             'name' => 'required|string|max:255',
+            'description' => 'nullable|string',
         ]);
 
         $card = BoardCard::findOrFail($id);
         $card->tasks()->create([
             'name' => $request->name,
+            'description' => $request->description,
             'is_done' => false,
         ]);
 
@@ -99,11 +102,17 @@ class BordController extends Controller
         $task->is_done = !$task->is_done;
         $task->save();
 
+        // Pastikan relasi card tidak null
         $card = $task->card;
-        $this->updateCardStatus($card);
+        if ($card) {
+            $this->updateCardStatus($card);
+            return redirect()->route('board.show', $card->id);
+        }
 
-        return redirect()->route('board.show', $card->id);
+        // Jika card tidak ditemukan, kembali ke board
+        return redirect()->route('board')->withErrors('Card not found for this task.');
     }
+
 
     private function updateCardStatus(BoardCard $card)
     {
@@ -137,5 +146,34 @@ class BordController extends Controller
         $card->members()->syncWithoutDetaching([$member->id]);
 
         return back()->with('success', 'Member invited!');
+    }
+
+    public function updateSubtasks(Request $request, BoardCard $card)
+    {
+        $subtasks = $request->input('subtasks', []);
+
+        foreach ($subtasks as $s) {
+            $task = SubTask::find($s['id']);
+            if ($task) {
+                $task->is_done = $s['is_completed'];
+                $task->save();
+            }
+        }
+
+        // Hitung status card
+        $total = $card->tasks()->count();
+        $completed = $card->tasks()->where('is_done', true)->count();
+
+        if ($total === 0 || $completed === 0) {
+            $card->status = 'Pending';
+        } elseif ($completed < $total) {
+            $card->status = 'In Progress';
+        } else {
+            $card->status = 'Completed';
+        }
+
+        $card->save();
+
+        return response()->json(['status' => 'success', 'card_status' => $card->status]);
     }
 }

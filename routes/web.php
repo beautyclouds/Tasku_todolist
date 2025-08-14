@@ -25,6 +25,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/board/{id}/tasks', [BordController::class, 'addTask']);
     Route::post('/board/tasks/{id}/toggle', [BordController::class, 'toggleTask'])->name('task.toggle');
     Route::post('/board/{id}/invite', [BordController::class, 'inviteMember'])->name('board.invite');
+    Route::put('/board/{card}/subtasks', [BordController::class, 'updateSubtasks']);
+
 });
 
 // Member
