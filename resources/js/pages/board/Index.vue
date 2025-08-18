@@ -2,7 +2,7 @@
 import AppLayout from '@/layouts/AppLayout.vue';
 import { type BreadcrumbItem } from '@/types';
 import { Head, router } from '@inertiajs/vue3';
-import { computed, defineProps, ref, watch } from 'vue';
+import { computed, defineProps, ref } from 'vue';
 
 const breadcrumbs: BreadcrumbItem[] = [{ title: 'Board', href: '/board' }];
 
@@ -18,9 +18,19 @@ const props = defineProps<{
     }[];
 }>();
 
-const pendingTasks = computed(() => props.cards.filter((card) => card.status === 'Pending'));
-const onProgressTasks = computed(() => props.cards.filter((card) => card.status === 'In Progress'));
-const completedTasks = computed(() => props.cards.filter((card) => card.status === 'Completed'));
+// Computed untuk 4 kolom
+const pendingTasks = computed(() =>
+    props.cards.filter(c => c.status === 'Pending' && (!c.members || c.members.length === 0))
+);
+const onProgressTasks = computed(() =>
+    props.cards.filter(c => c.status === 'In Progress' && (!c.members || c.members.length === 0))
+);
+const completedTasks = computed(() =>
+    props.cards.filter(c => c.status === 'Completed' && (!c.members || c.members.length === 0))
+);
+const collaborationTasks = computed(() =>
+    props.cards.filter(c => c.members && c.members.length > 0)
+);
 
 const showModal = ref(false);
 const isEditing = ref(false);
@@ -31,7 +41,6 @@ const newCard = ref({
     priority: 'Normal',
 });
 
-// Validasi form supaya tombol Save hanya aktif kalau title dan deadline diisi
 const isFormValid = computed(() => {
     return newCard.value.title.trim() !== '' && newCard.value.deadline !== '';
 });
@@ -96,23 +105,18 @@ const getSubtasks = (task: any): NormalizedSubtask[] => {
     }));
 };
 
-// Update status card saat checkbox subtask diubah
 const toggleSubtask = (card: any, subtask: any) => {
     subtask.is_completed = !subtask.is_completed;
 
     router.put(`/board/${card.id}/subtasks`, {
         subtasks: card.subtasks
     }, {
-        onSuccess: () => {
-            // opsional: reload page
-            // router.reload();
-        },
+        onSuccess: () => {},
         onError: (errors) => {
             console.error(errors);
         }
     });
 };
-
 </script>
 
 <template>
@@ -133,12 +137,14 @@ const toggleSubtask = (card: any, subtask: any) => {
                 </button>
             </div>
 
-            <div class="grid grid-cols-1 gap-6 md:grid-cols-3">
+            <!-- Grid 4 kolom -->
+            <div class="grid grid-cols-1 gap-6 md:grid-cols-4">
                 <template
                     v-for="(section, index) in [
-                        { label: '🟤 Pending', items: pendingTasks, color: 'text-gray-700', bg: 'bg-[#e1f0fc]' },
+                        { label: '🟤 Pending', items: pendingTasks, color: 'text-gray-700', bg: 'bg-orange-100' },
                         { label: '🟡 In Progress', items: onProgressTasks, color: 'text-yellow-600', bg: 'bg-yellow-100' },
                         { label: '🟢 Completed', items: completedTasks, color: 'text-green-600', bg: 'bg-green-100' },
+                        { label: '🔵 Collaboration', items: collaborationTasks, color: 'text-blue-600', bg: 'bg-blue-100' },
                     ]"
                     :key="index"
                 >
@@ -167,6 +173,7 @@ const toggleSubtask = (card: any, subtask: any) => {
                                     </li>
                                 </ul>
 
+                                <!-- Members -->
                                 <div v-if="task.members && task.members.length" class="mb-2 flex items-center gap-1">
                                     <span class="text-xs text-gray-500 dark:text-gray-400">👥</span>
                                     <div class="flex -space-x-2">
@@ -179,6 +186,7 @@ const toggleSubtask = (card: any, subtask: any) => {
                                         />
                                     </div>
                                 </div>
+
                                 <div class="mb-1 text-sm text-gray-600 dark:text-gray-300">📅 {{ task.deadline }}</div>
                                 <div
                                     v-if="task.status !== 'Completed' && isOverdue(task.deadline)"

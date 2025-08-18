@@ -19,6 +19,7 @@ class BordController extends Controller
         return Inertia::render('board/Index', [
             'cards' => $cards,
         ]);
+
     }
 
     public function show($id)
