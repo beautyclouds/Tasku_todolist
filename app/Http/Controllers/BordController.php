@@ -122,10 +122,16 @@ class BordController extends Controller
 
         if ($total === 0 || $completed === 0) {
             $card->status = 'Pending';
+            $card->is_revised = false;
         } elseif ($completed < $total) {
+            // Kalau sebelumnya Completed lalu berubah → revisi
+            if ($card->status === 'Completed') {
+                $card->is_revised = true;
+            }
             $card->status = 'In Progress';
         } else {
             $card->status = 'Completed';
+            $card->is_revised = false;
         }
 
         $card->save();
@@ -161,20 +167,25 @@ class BordController extends Controller
             }
         }
 
-        // Hitung status card
         $total = $card->tasks()->count();
         $completed = $card->tasks()->where('is_done', true)->count();
 
         if ($total === 0 || $completed === 0) {
             $card->status = 'Pending';
+            $card->is_revised = false;
         } elseif ($completed < $total) {
+            if ($card->status === 'Completed') {
+                $card->is_revised = true; // tandai revisi
+            }
             $card->status = 'In Progress';
         } else {
             $card->status = 'Completed';
+            $card->is_revised = false; // selesai, hilangkan badge
         }
 
         $card->save();
 
         return response()->json(['status' => 'success', 'card_status' => $card->status]);
     }
+
 }

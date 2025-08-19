@@ -13,6 +13,7 @@ const props = defineProps<{
         deadline: string;
         priority: string;
         status: string;
+        is_revised?: boolean;
         members?: { id: number; name: string; photo: string | null }[];
         subtasks?: { id: number; title: string; is_completed: boolean }[];
     }[];
@@ -23,7 +24,13 @@ const pendingTasks = computed(() =>
     props.cards.filter(c => c.status === 'Pending' && (!c.members || c.members.length === 0))
 );
 const onProgressTasks = computed(() =>
-    props.cards.filter(c => c.status === 'In Progress' && (!c.members || c.members.length === 0))
+    props.cards
+        .filter(c => c.status === 'In Progress' && (!c.members || c.members.length === 0))
+        .sort((a, b) => {
+            if (a.is_revised && !b.is_revised) return -1; //revisi naik ke atas
+            if (!a.is_revised && b.is_revised) return 1; //non-revisi  tetap di bawah revisi
+            return b.id - a.id; //kalau sama-sama revisi / sama-sama non revisi → urutkan berdasarkan id
+        })
 );
 const completedTasks = computed(() =>
     props.cards.filter(c => c.status === 'Completed' && (!c.members || c.members.length === 0))
@@ -157,8 +164,32 @@ const toggleSubtask = (card: any, subtask: any) => {
                             <div
                                 v-for="task in section.items"
                                 :key="task.id"
-                                :class="[section.bg, 'hover:bg-opacity-80 rounded-md p-3 shadow-sm transition']"
+                                class="relative hover:bg-opacity-80 rounded-md p-3 shadow-sm transition"
+                                :class="section.bg"
                             >
+
+                                <!-- Badge Revisi -->
+                                <span
+                                    v-if="task.is_revised"
+                                    class="absolute top-2 right-2 bg-red-300 text-red-500 text-[10px] font-semibold px-2 py-0.5 rounded-full shadow"
+                                >
+                                    Revisi
+                                </span>
+
+                                <!-- Badge Status untuk Collaboration -->
+                                <span
+                                    v-if="section.label.includes('Collaboration')"
+                                    :class="[
+                                        'absolute top-2 right-2 text-[10px] font-semibold px-2 py-0.5 rounded-full shadow',
+                                        task.status === 'Pending' && 'bg-orange-200 text-orange-700',
+                                        task.status === 'In Progress' && 'bg-yellow-200 text-yellow-700',
+                                        task.status === 'Completed' && 'bg-green-200 text-green-700'
+                                    ]"
+                                >   
+                                    {{ task.status }}
+                                </span>
+
+
                                 <p class="mb-2 cursor-pointer font-semibold dark:text-gray-100" @click="goToCard(task.id)">
                                     {{ task.title }}
                                 </p>
