@@ -13,6 +13,7 @@ class BordController extends Controller
     public function index()
     {
         $cards = BoardCard::with(['members', 'tasks'])
+            ->whereNull('closed_at')
             ->orderBy('created_at', 'desc')
             ->get();
 
@@ -186,6 +187,18 @@ class BordController extends Controller
         $card->save();
 
         return response()->json(['status' => 'success', 'card_status' => $card->status]);
+    }
+
+    public function close($id)
+    {
+        $card = BoardCard::findOrFail($id);
+
+        // update status & closed_at
+        $card->status = 'Completed'; // tetap Completed, biar konsisten enum
+        $card->closed_at = now();
+        $card->save();
+
+        return back()->with('success', 'Card berhasil di-close.');
     }
 
 }

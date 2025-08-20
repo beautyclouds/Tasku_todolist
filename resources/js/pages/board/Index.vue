@@ -124,6 +124,14 @@ const toggleSubtask = (card: any, subtask: any) => {
         }
     });
 };
+
+function closeCard(id: number) {
+  if (confirm("Apakah kamu yakin ingin menutup card ini?")) {
+    router.put(`/board/${id}/close`, {}, {
+      onSuccess: () => router.reload()
+    });
+  }
+}
 </script>
 
 <template>
@@ -171,7 +179,7 @@ const toggleSubtask = (card: any, subtask: any) => {
                                 <!-- Badge Revisi -->
                                 <span
                                     v-if="task.is_revised"
-                                    class="absolute top-2 right-2 bg-red-300 text-red-500 text-[10px] font-semibold px-2 py-0.5 rounded-full shadow"
+                                    class="absolute top-2 right-2 bg-red-200 text-red-700 text-[10px] font-semibold px-2 py-0.5 rounded-full shadow"
                                 >
                                     Revisi
                                 </span>
@@ -239,6 +247,14 @@ const toggleSubtask = (card: any, subtask: any) => {
                                         class="text-xs text-red-600 hover:underline dark:text-red-400 dark:hover:text-red-300"
                                     >
                                         Delete
+                                    </button>
+                                    <!-- Tombol Close hanya muncul kalau status Completed -->
+                                    <button
+                                        v-if="task.status === 'Completed'"
+                                        @click="closeCard(task.id)"
+                                        class="text-xs text-red-600 hover:underline dark:text-red-400 dark:hover:text-red-300"
+                                    >
+                                        Close
                                     </button>
                                 </div>
                             </div>

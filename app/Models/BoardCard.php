@@ -10,7 +10,15 @@ class BoardCard extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['title', 'deadline', 'priority', 'status'];
+    protected $fillable = [
+        'title',
+        'deadline',
+        'priority',
+        'status',
+        'closed_at',
+    ];
+
+    protected $dates = ['deadline', 'closed_at'];
 
     public function tasks()
     {
