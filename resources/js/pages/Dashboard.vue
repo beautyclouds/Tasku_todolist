@@ -91,24 +91,32 @@ const deadlineMap = computed(() => {
                         <a href="/board" class="text-sm text-blue-600 hover:underline dark:text-gray-200">See more</a>
                     </div>
                     <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                        <div
-                            v-for="board in props.recentBoards"
-                            :key="board.id"
-                            class="rounded-xl bg-[#a5bbc9] p-4 shadow transition hover:shadow-md"
-                        >
-                            <h4 class="mb-1 truncate text-sm font-semibold text-[#113f67]">📌 {{ board.title }}</h4>
-                            <p class="mb-1 text-xs text-gray-700">📅 {{ new Date(board.deadline).toLocaleDateString() }}</p>
-                            <div class="flex flex-wrap items-center gap-2 text-xs text-gray-700">
-                                👥
-                                <span
-                                    v-for="(member, index) in board.members.slice(0, 3)"
-                                    :key="index"
-                                    class="rounded-full border bg-white px-2 py-1 text-gray-700"
-                                >
-                                    {{ member.name }}
-                                </span>
+                        <template v-if="props.recentBoards && props.recentBoards.length > 0">
+                            <div
+                                v-for="board in props.recentBoards"
+                                :key="board.id"
+                                class="rounded-xl bg-[#a5bbc9] p-4 shadow transition hover:shadow-md"
+                            >
+                                <h4 class="mb-1 truncate text-sm font-semibold text-[#113f67]">📌 {{ board.title }}</h4>
+                                <p class="mb-1 text-xs text-gray-700">📅 {{ new Date(board.deadline).toLocaleDateString() }}</p>
+                                <div class="flex flex-wrap items-center gap-2 text-xs text-gray-700">
+                                    👥
+                                    <!-- FIX: Gunakan optional chaining untuk menghindari error jika board.members undefined -->
+                                    <span
+                                        v-for="(member, index) in board.members?.slice(0, 3)"
+                                        :key="index"
+                                        class="rounded-full border bg-white px-2 py-1 text-gray-700"
+                                    >
+                                        {{ member.name }}
+                                    </span>
+                                </div>
                             </div>
-                        </div>
+                        </template>
+                        <template v-else>
+                            <div class="text-gray-500 italic dark:text-gray-400">
+                                Belum ada papan yang baru-baru ini dilihat.
+                            </div>
+                        </template>
                     </div>
                 </div>
 

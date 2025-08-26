@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\BoardCard;
-use App\Models\Member;
+use App\Models\User; // Ganti "Member" dengan "User"
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -17,13 +17,13 @@ class DashboardController extends Controller
         $completedCount = BoardCard::where('status', 'Completed')->count();
 
         // Ambil 3 board terakhir untuk Overview
-        $recentBoards = BoardCard::with('members')
+        $recentBoards = BoardCard::with('user') // Ganti 'members' dengan 'user'
             ->orderBy('created_at', 'desc')
             ->take(3)
             ->get();
 
-        // Ambil 3 member terbaru
-        $recentMembers = Member::orderBy('created_at', 'desc')
+        // Ambil 3 user terbaru
+        $recentUsers = User::orderBy('created_at', 'desc')
             ->take(3)
             ->get();
 
@@ -42,7 +42,7 @@ class DashboardController extends Controller
             'inProgressCount' => $inProgressCount,
             'completedCount' => $completedCount,
             'recentBoards' => $recentBoards,
-            'recentMembers' => $recentMembers,
+            'recentUsers' => $recentUsers, // Ganti 'recentMembers' dengan 'recentUsers'
             'deadlines' => $deadlines,
             'todayTasks' => $todayTasks,
         ]);

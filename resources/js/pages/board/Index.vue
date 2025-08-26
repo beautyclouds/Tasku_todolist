@@ -6,38 +6,50 @@ import { computed, defineProps, ref } from 'vue';
 
 const breadcrumbs: BreadcrumbItem[] = [{ title: 'Board', href: '/board' }];
 
+// Perbaikan: Menerima myBoards dan collaborationBoards secara terpisah
 const props = defineProps<{
-    cards: {
+    myBoards: {
         id: number;
         title: string;
         deadline: string;
         priority: string;
         status: string;
         is_revised?: boolean;
-        members?: { id: number; name: string; photo: string | null }[];
-        subtasks?: { id: number; title: string; is_completed: boolean }[];
+        user: { id: number; name: string };
+        collaborators: { id: number; name: string; photo: string | null }[];
+        tasks?: { id: number; name: string; is_done: boolean }[];
+    }[];
+    collaborationBoards: {
+        id: number;
+        title: string;
+        deadline: string;
+        priority: string;
+        status: string;
+        is_revised?: boolean;
+        user: { id: number; name: string };
+        collaborators: { id: number; name: string; photo: string | null }[];
+        tasks?: { id: number; name: string; is_done: boolean }[];
     }[];
 }>();
 
-// Computed untuk 4 kolom
+// computed sekarang bekerja dengan properti myBoards
 const pendingTasks = computed(() =>
-    props.cards.filter(c => c.status === 'Pending' && (!c.members || c.members.length === 0))
+    props.myBoards.filter(c => c.status === 'Pending')
 );
 const onProgressTasks = computed(() =>
-    props.cards
-        .filter(c => c.status === 'In Progress' && (!c.members || c.members.length === 0))
+    props.myBoards
+        .filter(c => c.status === 'In Progress')
         .sort((a, b) => {
-            if (a.is_revised && !b.is_revised) return -1; //revisi naik ke atas
-            if (!a.is_revised && b.is_revised) return 1; //non-revisi  tetap di bawah revisi
-            return b.id - a.id; //kalau sama-sama revisi / sama-sama non revisi → urutkan berdasarkan id
+            if (a.is_revised && !b.is_revised) return -1;
+            if (!a.is_revised && b.is_revised) return 1;
+            return b.id - a.id;
         })
 );
 const completedTasks = computed(() =>
-    props.cards.filter(c => c.status === 'Completed' && (!c.members || c.members.length === 0))
+    props.myBoards.filter(c => c.status === 'Completed')
 );
-const collaborationTasks = computed(() =>
-    props.cards.filter(c => c.members && c.members.length > 0)
-);
+
+// collaborationTasks tidak lagi dibutuhkan karena sudah ada props.collaborationBoards
 
 const showModal = ref(false);
 const isEditing = ref(false);
@@ -65,6 +77,7 @@ const openEditModal = (card: any) => {
 };
 
 const submitCard = () => {
+    // Perbaikan: Ganti endpoint POST untuk membuat card baru ke '/board/create'
     const url = isEditing.value ? `/board/${newCard.value.id}` : '/board/create';
 
     if (isEditing.value) {
@@ -112,6 +125,7 @@ const getSubtasks = (task: any): NormalizedSubtask[] => {
     }));
 };
 
+// Perbaikan: `toggleSubtask` sekarang bisa dipanggil dari template
 const toggleSubtask = (card: any, subtask: any) => {
     subtask.is_completed = !subtask.is_completed;
 
@@ -156,10 +170,10 @@ function closeCard(id: number) {
             <div class="grid grid-cols-1 gap-6 md:grid-cols-4">
                 <template
                     v-for="(section, index) in [
-                        { label: '🟤 Pending', items: pendingTasks, color: 'text-gray-700', bg: 'bg-orange-100' },
-                        { label: '🟡 In Progress', items: onProgressTasks, color: 'text-yellow-600', bg: 'bg-yellow-100' },
-                        { label: '🟢 Completed', items: completedTasks, color: 'text-green-600', bg: 'bg-green-100' },
-                        { label: '🔵 Collaboration', items: collaborationTasks, color: 'text-blue-600', bg: 'bg-blue-100' },
+                        { label: '🟤 Pending (My Boards)', items: pendingTasks, color: 'text-gray-700', bg: 'bg-orange-100' },
+                        { label: '🟡 In Progress (My Boards)', items: onProgressTasks, color: 'text-yellow-600', bg: 'bg-yellow-100' },
+                        { label: '🟢 Completed (My Boards)', items: completedTasks, color: 'text-green-600', bg: 'bg-green-100' },
+                        { label: '🔵 Collaboration', items: props.collaborationBoards, color: 'text-blue-600', bg: 'bg-blue-100' },
                     ]"
                     :key="index"
                 >
@@ -193,7 +207,7 @@ function closeCard(id: number) {
                                         task.status === 'In Progress' && 'bg-yellow-200 text-yellow-700',
                                         task.status === 'Completed' && 'bg-green-200 text-green-700'
                                     ]"
-                                >   
+                                > 
                                     {{ task.status }}
                                 </span>
 
@@ -205,22 +219,23 @@ function closeCard(id: number) {
                                 <!-- Subtasks -->
                                 <ul v-if="getSubtasks(task).length" class="mb-2 text-xs space-y-1">
                                     <li v-for="sub in getSubtasks(task)" :key="sub.id" class="flex items-center gap-2">
-                                        <input type="checkbox" :checked="sub.is_completed" disabled />
+                                        <!-- Perbaikan: Hapus 'disabled' dan tambahkan event handler -->
+                                        <input type="checkbox" :checked="sub.is_completed" @change="toggleSubtask(task, sub)" />
                                         <span :class="{ 'line-through text-gray-400': sub.is_completed }">
                                             {{ sub.title }}
                                         </span>
                                     </li>
                                 </ul>
 
-                                <!-- Members -->
-                                <div v-if="task.members && task.members.length" class="mb-2 flex items-center gap-1">
+                                <!-- Collaborators -->
+                                <div v-if="task.collaborators && task.collaborators.length" class="mb-2 flex items-center gap-1">
                                     <span class="text-xs text-gray-500 dark:text-gray-400">👥</span>
                                     <div class="flex -space-x-2">
                                         <img
-                                            v-for="member in task.members"
-                                            :key="member.id"
-                                            :src="member.photo ? `/storage/${member.photo}` : `https://ui-avatars.com/api/?name=${member.name}`"
-                                            :alt="member.name"
+                                            v-for="collaborator in task.collaborators"
+                                            :key="collaborator.id"
+                                            :src="collaborator.photo ? `/storage/${collaborator.photo}` : `https://ui-avatars.com/api/?name=${collaborator.name}`"
+                                            :alt="collaborator.name"
                                             class="h-6 w-6 rounded-full border-2 border-white object-cover shadow dark:border-gray-700"
                                         />
                                     </div>
@@ -228,7 +243,7 @@ function closeCard(id: number) {
 
                                 <div class="mb-1 text-sm text-gray-600 dark:text-gray-300">📅 {{ task.deadline }}</div>
                                 <div
-                                    v-if="task.status !== 'Completed' && isOverdue(task.deadline)"
+                                    v-if="task.status === 'In Progress' && isOverdue(task.deadline)"
                                     class="mb-1 text-xs font-semibold text-red-600 dark:text-red-400"
                                 >
                                     ⚠️ Overdue

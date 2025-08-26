@@ -32,11 +32,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
 });
 
-// Member
-Route::get('/member', [MemberController::class, 'index'])->name('member.index');
-Route::post('/member', [MemberController::class, 'store'])->name('member.store');
-Route::delete('/member/{id}', [MemberController::class, 'destroy'])->name('member.destroy');
-
 // History
 Route::get('/history', [HistoryController::class, 'index'])->name('history.index');
 Route::get('/history/{id}', [HistoryController::class, 'show'])->name('history.show');

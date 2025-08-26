@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\BoardCard;
+use App\Models\User; // Ganti 'Member' dengan 'User'
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Storage;
@@ -12,18 +13,10 @@ class HistoryController extends Controller
     // Halaman list history
     public function index()
     {
-        // Load tasks dan members
-        $cards = BoardCard::with(['tasks', 'members:id,name,photo'])
+        // Load tasks dan user
+        $cards = BoardCard::with(['tasks', 'user:id,name', 'collaborators']) // Ganti 'members' dengan 'user' dan 'collaborators'
             ->whereNotNull('closed_at') // hanya yang sudah di-close
-            ->get()
-            ->map(function ($card) {
-                // Transform member photo agar bisa diakses
-                $card->members->transform(function ($member) {
-                    $member->photo = $member->photo ? Storage::url($member->photo) : null;
-                    return $member;
-                });
-                return $card;
-            });
+            ->get();
 
         return Inertia::render('history/HistoryPage', [
             'cards' => $cards,
@@ -33,13 +26,7 @@ class HistoryController extends Controller
     // Halaman detail history
     public function show($id)
     {
-        $card = BoardCard::with(['tasks', 'members:id,name,photo'])->findOrFail($id);
-
-        // Transform member photo
-        $card->members->transform(function ($member) {
-            $member->photo = $member->photo ? Storage::url($member->photo) : null;
-            return $member;
-        });
+        $card = BoardCard::with(['tasks', 'user', 'collaborators'])->findOrFail($id); // Ganti 'members' dengan 'user' dan 'collaborators'
 
         return Inertia::render('history/HistoryDetail', [
             'card' => $card,

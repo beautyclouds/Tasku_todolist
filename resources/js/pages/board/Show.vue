@@ -10,18 +10,20 @@ const props = defineProps<{
         deadline: string;
         priority: string;
         status: string;
+        user: { id: number; name: string };
         tasks: { id: number; name: string; description?: string | null; is_done: boolean }[];
-        members?: { id: number; name: string; photo: string | null }[];
+        collaborators?: { id: number; name: string; photo: string | null }[];
     };
-    allMembers: {
+    allUsers: {
         id: number;
         name: string;
+        email: string; // Tambahkan email
         photo: string | null;
     }[];
 }>();
 
 const form = useForm({ name: '', description: '' });
-const inviteForm = useForm({ name: '' });
+const inviteForm = useForm({ email: '' }); // Ganti 'name' jadi 'email'
 
 const addSubTask = () => {
     if (form.name.trim() === '') return;
@@ -48,7 +50,7 @@ const toggleTask = (taskId: number) => {
 };
 
 const inviteMember = () => {
-    if (!inviteForm.name.trim()) return;
+    if (!inviteForm.email.trim()) return;
     inviteForm.post(`/board/${props.card.id}/invite`, {
         preserveScroll: true,
         onSuccess: () => {
@@ -91,21 +93,21 @@ const formattedDeadline = computed(() => {
                 Priority: {{ props.card.priority }} | Status: {{ props.card.status }}
             </p>
 
-            <!-- ✅ Show Members -->
-            <div v-if="props.card.members && props.card.members.length" class="mb-4">
-                <h2 class="mb-2 font-semibold dark:text-gray-200">👥 Members:</h2>
+            <!-- ✅ Show Collaborators -->
+            <div v-if="props.card.collaborators && props.card.collaborators.length" class="mb-4">
+                <h2 class="mb-2 font-semibold dark:text-gray-200">👥 Collaborators:</h2>
                 <div class="flex flex-wrap items-center gap-2">
                     <div
-                        v-for="member in props.card.members"
-                        :key="member.id"
+                        v-for="collaborator in props.card.collaborators"
+                        :key="collaborator.id"
                         class="flex items-center gap-2 rounded-full bg-gray-100 px-2 py-1 dark:bg-gray-700"
                     >
                         <img
-                            :src="member.photo ? `/storage/${member.photo}` : `https://ui-avatars.com/api/?name=${member.name}`"
-                            :alt="member.name"
+                            :src="collaborator.photo ? `/storage/${collaborator.photo}` : `https://ui-avatars.com/api/?name=${collaborator.name}`"
+                            :alt="collaborator.name"
                             class="h-8 w-8 rounded-full border-2 border-white shadow dark:border-gray-700"
                         />
-                        <span class="text-sm font-medium dark:text-gray-200">{{ member.name }}</span>
+                        <span class="text-sm font-medium dark:text-gray-200">{{ collaborator.name }}</span>
                     </div>
                 </div>
             </div>
@@ -115,17 +117,17 @@ const formattedDeadline = computed(() => {
                 <h2 class="mb-2 font-semibold dark:text-gray-200">➕ Invite Member</h2>
                 <form @submit.prevent="inviteMember" class="flex items-center gap-2">
                     <select
-                        v-model="inviteForm.name"
+                        v-model="inviteForm.email"
                         class="flex-1 rounded border px-3 py-2 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
                     >
-                        <option value="" disabled>Select a member...</option>
+                        <option value="" disabled>Select a user...</option>
                         <option
-                            v-for="member in props.allMembers"
-                            :key="member.id"
-                            :value="member.name"
-                            :disabled="props.card.members?.some((m) => m.id === member.id)"
+                            v-for="user in props.allUsers"
+                            :key="user.id"
+                            :value="user.email"
+                            :disabled="props.card.collaborators?.some((c) => c.id === user.id)"
                         >
-                            {{ member.name }}
+                            {{ user.name }} ({{ user.email }})
                         </option>
                     </select>
                     <button

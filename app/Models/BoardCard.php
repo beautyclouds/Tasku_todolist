@@ -4,7 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use App\Models\Member;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class BoardCard extends Model
 {
@@ -16,18 +17,30 @@ class BoardCard extends Model
         'priority',
         'status',
         'closed_at',
+        'user_id', // Tambahkan user_id di sini
     ];
 
     protected $dates = ['deadline', 'closed_at'];
 
+    // Relasi ke SubTask
     public function tasks()
     {
         return $this->hasMany(SubTask::class, 'board_card_id');
     }
 
-    public function members()
+    /**
+     * Relasi ke user pembuat (board ini dimiliki oleh 1 user).
+     */
+    public function user(): BelongsTo
     {
-        return $this->belongsToMany(Member::class, 'board_card_member');
+        return $this->belongsTo(User::class);
     }
 
+    /**
+     * Relasi ke user-user kolaborator (1 board bisa punya banyak kolaborator).
+     */
+    public function collaborators(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'board_collaborator', 'board_card_id', 'user_id');
+    }
 }
