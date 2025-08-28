@@ -18,36 +18,26 @@ class BordController extends Controller
     {
         $user = Auth::user();
 
-        // My Boards = card buatan user TANPA collaborator
+        // Ambil board yang dibuat oleh user sendiri
         $myBoards = $user->myBoards()
-            ->with(['user', 'collaborators', 'tasks'])
-            ->whereNull('closed_at')
-            ->whereDoesntHave('collaborators') // card buatan sendiri tapi tidak punya anggota lain
-            ->orderBy('created_at', 'desc')
-            ->get();
+                         ->with(['user', 'collaborators', 'tasks']) // Eager loading untuk pembuat, kolaborator, dan task
+                         ->whereNull('closed_at')
+                         ->orderBy('created_at', 'desc')
+                         ->get();
 
-        // Collaboration Boards = card di mana user adalah collaborator
-        // atau card buatan user sendiri tapi ada collaborator
-        $collaborationBoards = BoardCard::with(['user', 'collaborators', 'tasks'])
-            ->whereNull('closed_at')
-            ->where(function ($q) use ($user) {
-                $q->whereHas('collaborators', function ($q2) use ($user) {
-                    $q2->where('user_id', $user->id); // user jadi collaborator
-                })
-                ->orWhere(function ($q2) use ($user) {
-                    $q2->where('user_id', $user->id)
-                        ->whereHas('collaborators'); // user pembuat card + ada collaborator
-                });
-            })
-            ->orderBy('created_at', 'desc')
-            ->get();
+        // Ambil board di mana user adalah kolaborator
+        $collaborationBoards = $user->collaborationBoards()
+                                     ->with(['user', 'collaborators', 'tasks'])
+                                     ->where('board_cards.user_id', '!=', $user->id) // Diperbaiki: tentukan tabelnya
+                                     ->whereNull('closed_at')
+                                     ->orderBy('created_at', 'desc')
+                                     ->get();
 
         return Inertia::render('board/Index', [
             'myBoards' => $myBoards,
             'collaborationBoards' => $collaborationBoards,
         ]);
     }
-
 
     public function show($id)
     {
