@@ -190,7 +190,7 @@ function closeCard(id: number) {
                                 :class="section.bg"
                             >
 
-                                <!-- Badge Revisi -->
+                                <!-- Badge -->
                                 <span
                                     v-if="task.is_revised"
                                     class="absolute top-2 right-2 bg-red-200 text-red-700 text-[10px] font-semibold px-2 py-0.5 rounded-full shadow"
@@ -198,19 +198,17 @@ function closeCard(id: number) {
                                     Revisi
                                 </span>
 
-                                <!-- Badge Status untuk Collaboration -->
                                 <span
-                                    v-if="section.label.includes('Collaboration')"
+                                    v-else-if="section.label.includes('Collaboration')"
                                     :class="[
                                         'absolute top-2 right-2 text-[10px] font-semibold px-2 py-0.5 rounded-full shadow',
                                         task.status === 'Pending' && 'bg-orange-200 text-orange-700',
                                         task.status === 'In Progress' && 'bg-yellow-200 text-yellow-700',
                                         task.status === 'Completed' && 'bg-green-200 text-green-700'
                                     ]"
-                                > 
+                                >
                                     {{ task.status }}
                                 </span>
-
 
                                 <p class="mb-2 cursor-pointer font-semibold dark:text-gray-100" @click="goToCard(task.id)">
                                     {{ task.title }}

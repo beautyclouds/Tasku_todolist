@@ -8,9 +8,8 @@ const props = defineProps({
 </script>
 
 <template>
-    <AppLayout>
-        <Head title="History" />
-
+    <Head title="History" />
+    <AppLayout :breadcrumbs="[{ title: 'History', href: '/history' }]">
         <div class="p-6 space-y-6 min-h-screen bg-[#f2f2f2]">
             <h2 class="text-2xl font-bold">History</h2>
 

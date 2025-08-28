@@ -97,6 +97,21 @@ const formattedDeadline = computed(() => {
             <div v-if="props.card.collaborators && props.card.collaborators.length" class="mb-4">
                 <h2 class="mb-2 font-semibold dark:text-gray-200">👥 Collaborators:</h2>
                 <div class="flex flex-wrap items-center gap-2">
+                    <!-- Owner -->
+                    <div
+                        class="flex items-center gap-2 rounded-full bg-gray-100 px-2 py-1 dark:bg-gray-700"
+                    >
+                        <img
+                            :src="`https://ui-avatars.com/api/?name=${props.card.user.name}`"
+                            :alt="props.card.user.name"
+                            class="h-8 w-8 rounded-full border-2 border-white shadow dark:border-gray-700"
+                        />
+                        <span class="text-sm font-medium dark:text-gray-200">
+                            {{ props.card.user.name }} (Owner)
+                        </span>
+                    </div>
+
+                    <!-- Collaborators -->
                     <div
                         v-for="collaborator in props.card.collaborators"
                         :key="collaborator.id"
