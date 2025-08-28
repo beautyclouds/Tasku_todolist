@@ -13,25 +13,37 @@ class BordController extends Controller
 {
     /**
      * Menampilkan daftar board pribadi dan kolaborasi user yang sedang login.
+     * Logika ini menggabungkan kode dari kedua file untuk memastikan semua board terambil dengan benar.
      */
     public function index()
     {
         $user = Auth::user();
 
-        // Ambil board yang dibuat oleh user sendiri
+        // My Boards: card yang dibuat oleh user DAN TIDAK memiliki kolaborator.
         $myBoards = $user->myBoards()
-                         ->with(['user', 'collaborators', 'tasks']) // Eager loading untuk pembuat, kolaborator, dan task
-                         ->whereNull('closed_at')
-                         ->orderBy('created_at', 'desc')
-                         ->get();
+            ->with(['user', 'collaborators', 'tasks']) // Eager loading untuk relasi
+            ->whereNull('closed_at')
+            ->whereDoesntHave('collaborators') // Hanya board tanpa kolaborator
+            ->orderBy('created_at', 'desc')
+            ->get();
 
-        // Ambil board di mana user adalah kolaborator
-        $collaborationBoards = $user->collaborationBoards()
-                                     ->with(['user', 'collaborators', 'tasks'])
-                                     ->where('board_cards.user_id', '!=', $user->id) // Diperbaiki: tentukan tabelnya
-                                     ->whereNull('closed_at')
-                                     ->orderBy('created_at', 'desc')
-                                     ->get();
+        // Collaboration Boards: board di mana user adalah kolaborator,
+        // ATAU board yang dibuat oleh user DAN memiliki kolaborator.
+        $collaborationBoards = BoardCard::with(['user', 'collaborators', 'tasks'])
+            ->whereNull('closed_at')
+            ->where(function ($q) use ($user) {
+                // Kondisi 1: Board di mana user_id di tabel `board_card_user` adalah user yang sedang login
+                $q->whereHas('collaborators', function ($q2) use ($user) {
+                    $q2->where('user_id', $user->id);
+                })
+                // Kondisi 2: Board yang dibuat oleh user sendiri TAPI memiliki kolaborator
+                ->orWhere(function ($q2) use ($user) {
+                    $q2->where('user_id', $user->id)
+                       ->whereHas('collaborators');
+                });
+            })
+            ->orderBy('created_at', 'desc')
+            ->get();
 
         return Inertia::render('board/Index', [
             'myBoards' => $myBoards,
@@ -41,17 +53,19 @@ class BordController extends Controller
 
     public function show($id)
     {
+        // Menampilkan detail satu card dengan relasi terkait
         $card = BoardCard::with(['tasks', 'user', 'collaborators'])->findOrFail($id);
-        $allUsers = User::all(); // Ganti Member dengan User
+        $allUsers = User::all(); // Mengambil semua user untuk fitur invite
 
         return Inertia::render('board/Show', [
             'card' => $card,
-            'allUsers' => $allUsers, // Ganti allMembers dengan allUsers
+            'allUsers' => $allUsers,
         ]);
     }
 
     public function store(Request $request)
     {
+        // Validasi dan menyimpan card baru
         $request->validate([
             'title' => 'required|string|max:255',
             'deadline' => 'nullable|date',
@@ -63,14 +77,15 @@ class BordController extends Controller
             'deadline' => $request->deadline,
             'priority' => $request->priority,
             'status' => 'Pending',
-            'user_id' => Auth::id(), // Tambahkan user_id dari user yang sedang login
+            'user_id' => Auth::id(),
         ]);
 
-        return redirect()->route('board.index'); // Diperbaiki: ganti 'board' dengan 'board.index'
+        return redirect()->route('board.index');
     }
 
     public function update(Request $request, $id)
     {
+        // Memperbarui detail card
         $request->validate([
             'title' => 'required|string|max:255',
             'deadline' => 'nullable|date',
@@ -84,19 +99,21 @@ class BordController extends Controller
             'priority' => $request->priority,
         ]);
 
-        return redirect()->route('board.index'); // Diperbaiki: ganti 'board' dengan 'board.index'
+        return redirect()->route('board.index');
     }
 
     public function destroy($id)
     {
+        // Menghapus card
         $card = BoardCard::findOrFail($id);
         $card->delete();
 
-        return redirect()->route('board.index'); // Diperbaiki: ganti 'board' dengan 'board.index'
+        return redirect()->route('board.index');
     }
 
     public function addTask(Request $request, $id)
     {
+        // Menambahkan sub-task ke card
         $request->validate([
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
@@ -116,6 +133,7 @@ class BordController extends Controller
 
     public function toggleTask(Request $request, $id)
     {
+        // Mengubah status `is_done` dari sub-task
         $task = SubTask::findOrFail($id);
         $task->is_done = !$task->is_done;
         $task->save();
@@ -126,11 +144,12 @@ class BordController extends Controller
             return redirect()->route('board.show', $card->id);
         }
 
-        return redirect()->route('board.index')->withErrors('Card not found for this task.'); // Diperbaiki: ganti 'board' dengan 'board.index'
+        return redirect()->route('board.index')->withErrors('Card not found for this task.');
     }
 
     private function updateCardStatus(BoardCard $card)
     {
+        // Memperbarui status card berdasarkan sub-task yang sudah selesai
         $total = $card->tasks()->count();
         $completed = $card->tasks()->where('is_done', true)->count();
 
@@ -152,6 +171,7 @@ class BordController extends Controller
 
     public function inviteMember(Request $request, $cardId)
     {
+        // Mengundang user sebagai kolaborator
         $request->validate([
             'email' => 'required|email|exists:users,email',
         ]);
@@ -169,6 +189,7 @@ class BordController extends Controller
 
     public function updateSubtasks(Request $request, BoardCard $card)
     {
+        // Memperbarui status beberapa sub-task sekaligus dari request
         $subtasks = $request->input('subtasks', []);
 
         foreach ($subtasks as $s) {
@@ -202,6 +223,7 @@ class BordController extends Controller
 
     public function close($id)
     {
+        // Menutup board secara permanen
         $card = BoardCard::findOrFail($id);
 
         $card->status = 'Completed';

@@ -17,13 +17,13 @@ const props = defineProps<{
     allUsers: {
         id: number;
         name: string;
-        email: string; // Tambahkan email
+        email: string;
         photo: string | null;
     }[];
 }>();
 
 const form = useForm({ name: '', description: '' });
-const inviteForm = useForm({ email: '' }); // Ganti 'name' jadi 'email'
+const inviteForm = useForm({ email: '' });
 
 const addSubTask = () => {
     if (form.name.trim() === '') return;
@@ -76,7 +76,6 @@ const formattedDeadline = computed(() => {
     <Head title="Card Detail" />
     <AppLayout>
         <div class="mx-auto mt-6 w-full rounded-xl bg-white p-6 shadow-md dark:bg-[#333333] dark:text-white">
-            <!-- 🔙 Tombol Kembali -->
             <a
                 href="/board"
                 class="inline-flex items-center text-3xl font-extrabold text-[#033A63] transition hover:text-[#022d4d] dark:text-blue-400 dark:hover:text-blue-300"
@@ -93,10 +92,22 @@ const formattedDeadline = computed(() => {
                 Priority: {{ props.card.priority }} | Status: {{ props.card.status }}
             </p>
 
-            <!-- ✅ Show Collaborators -->
-            <div v-if="props.card.collaborators && props.card.collaborators.length" class="mb-4">
+            <div class="mb-4">
                 <h2 class="mb-2 font-semibold dark:text-gray-200">👥 Collaborators:</h2>
                 <div class="flex flex-wrap items-center gap-2">
+                    <div
+                        class="flex items-center gap-2 rounded-full bg-gray-100 px-2 py-1 dark:bg-gray-700"
+                    >
+                        <img
+                            :src="`https://ui-avatars.com/api/?name=${props.card.user.name}`"
+                            :alt="props.card.user.name"
+                            class="h-8 w-8 rounded-full border-2 border-white shadow dark:border-gray-700"
+                        />
+                        <span class="text-sm font-medium dark:text-gray-200">
+                            {{ props.card.user.name }} (Owner)
+                        </span>
+                    </div>
+
                     <div
                         v-for="collaborator in props.card.collaborators"
                         :key="collaborator.id"
@@ -112,7 +123,6 @@ const formattedDeadline = computed(() => {
                 </div>
             </div>
 
-            <!-- ✅ Invite Member -->
             <div class="mb-6">
                 <h2 class="mb-2 font-semibold dark:text-gray-200">➕ Invite Member</h2>
                 <form @submit.prevent="inviteMember" class="flex items-center gap-2">
@@ -125,12 +135,13 @@ const formattedDeadline = computed(() => {
                             v-for="user in props.allUsers"
                             :key="user.id"
                             :value="user.email"
-                            :disabled="props.card.collaborators?.some((c) => c.id === user.id)"
+                            :disabled="props.card.collaborators?.some((c) => c.id === user.id) || props.card.user.id === user.id"
                         >
                             {{ user.name }} ({{ user.email }})
                         </option>
                     </select>
                     <button
+                        type="submit"
                         class="w-[100px] rounded bg-[#033A63] py-1.5 text-l text-white transition hover:bg-[#022d4d] dark:bg-[#34699A] dark:hover:bg-blue-500"
                     >
                         Invite
@@ -138,7 +149,6 @@ const formattedDeadline = computed(() => {
                 </form>
             </div>
 
-            <!-- ✅ Sub Tasks -->
             <div>
                 <h2 class="mb-2 font-semibold dark:text-gray-200">📌 Sub Tasks:</h2>
                 <ul class="mb-4 space-y-2 text-gray-800 dark:text-gray-200">
@@ -160,7 +170,6 @@ const formattedDeadline = computed(() => {
                     </li>
                 </ul>
 
-                <!-- ✅ Form tambah task -->
                 <form @submit.prevent="addSubTask" class="flex flex-col gap-2">
                     <input
                         v-model="form.name"
@@ -174,6 +183,7 @@ const formattedDeadline = computed(() => {
                         class="flex-1 rounded border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-[#033A63] focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:ring-blue-500"
                     ></textarea>
                     <button
+                        type="submit"
                         class="w-[100px] rounded bg-[#033A63] py-1.5 text-l text-white transition hover:bg-[#022d4d] dark:bg-[#34699A] dark:hover:bg-blue-500"
                     >
                         Add

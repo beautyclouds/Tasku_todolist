@@ -6,7 +6,6 @@ import { computed, defineProps, ref } from 'vue';
 
 const breadcrumbs: BreadcrumbItem[] = [{ title: 'Board', href: '/board' }];
 
-// Perbaikan: Menerima myBoards dan collaborationBoards secara terpisah
 const props = defineProps<{
     myBoards: {
         id: number;
@@ -32,7 +31,6 @@ const props = defineProps<{
     }[];
 }>();
 
-// computed sekarang bekerja dengan properti myBoards
 const pendingTasks = computed(() =>
     props.myBoards.filter(c => c.status === 'Pending')
 );
@@ -48,8 +46,6 @@ const onProgressTasks = computed(() =>
 const completedTasks = computed(() =>
     props.myBoards.filter(c => c.status === 'Completed')
 );
-
-// collaborationTasks tidak lagi dibutuhkan karena sudah ada props.collaborationBoards
 
 const showModal = ref(false);
 const isEditing = ref(false);
@@ -77,7 +73,6 @@ const openEditModal = (card: any) => {
 };
 
 const submitCard = () => {
-    // Perbaikan: Ganti endpoint POST untuk membuat card baru ke '/board/create'
     const url = isEditing.value ? `/board/${newCard.value.id}` : '/board/create';
 
     if (isEditing.value) {
@@ -125,7 +120,6 @@ const getSubtasks = (task: any): NormalizedSubtask[] => {
     }));
 };
 
-// Perbaikan: `toggleSubtask` sekarang bisa dipanggil dari template
 const toggleSubtask = (card: any, subtask: any) => {
     subtask.is_completed = !subtask.is_completed;
 
@@ -166,7 +160,6 @@ function closeCard(id: number) {
                 </button>
             </div>
 
-            <!-- Grid 4 kolom -->
             <div class="grid grid-cols-1 gap-6 md:grid-cols-4">
                 <template
                     v-for="(section, index) in [
@@ -189,18 +182,14 @@ function closeCard(id: number) {
                                 class="relative hover:bg-opacity-80 rounded-md p-3 shadow-sm transition"
                                 :class="section.bg"
                             >
-
-                                <!-- Badge Revisi -->
                                 <span
                                     v-if="task.is_revised"
                                     class="absolute top-2 right-2 bg-red-200 text-red-700 text-[10px] font-semibold px-2 py-0.5 rounded-full shadow"
                                 >
                                     Revisi
                                 </span>
-
-                                <!-- Badge Status untuk Collaboration -->
                                 <span
-                                    v-if="section.label.includes('Collaboration')"
+                                    v-else-if="section.label.includes('Collaboration')"
                                     :class="[
                                         'absolute top-2 right-2 text-[10px] font-semibold px-2 py-0.5 rounded-full shadow',
                                         task.status === 'Pending' && 'bg-orange-200 text-orange-700',
@@ -211,17 +200,14 @@ function closeCard(id: number) {
                                     {{ task.status }}
                                 </span>
 
-
                                 <p 
                                   class="mb-2 cursor-pointer font-semibold dark:text-gray-100 whitespace-nowrap overflow-hidden text-ellipsis" 
                                   @click="goToCard(task.id)">
                                     {{ task.title }}
                                 </p>
 
-                                <!-- Subtasks -->
                                 <ul v-if="getSubtasks(task).length" class="mb-2 text-xs space-y-1">
                                     <li v-for="sub in getSubtasks(task)" :key="sub.id" class="flex items-center gap-2">
-                                        <!-- Perbaikan: Hapus 'disabled' dan tambahkan event handler -->
                                         <input type="checkbox" :checked="sub.is_completed" @change="toggleSubtask(task, sub)" />
                                         <span :class="{ 'line-through text-gray-400': sub.is_completed }">
                                             {{ sub.title }}
@@ -229,7 +215,6 @@ function closeCard(id: number) {
                                     </li>
                                 </ul>
 
-                                <!-- Collaborators -->
                                 <div v-if="task.collaborators && task.collaborators.length" class="mb-2 flex items-center gap-1">
                                     <span class="text-xs text-gray-500 dark:text-gray-400">👥</span>
                                     <div class="flex -space-x-2">
@@ -265,7 +250,6 @@ function closeCard(id: number) {
                                     >
                                         Delete
                                     </button>
-                                    <!-- Tombol Close hanya muncul kalau status Completed -->
                                     <button
                                         v-if="task.status === 'Completed'"
                                         @click="closeCard(task.id)"
@@ -281,7 +265,6 @@ function closeCard(id: number) {
             </div>
         </div>
 
-        <!-- Modal tetap sama -->
         <div v-if="showModal" class="bg-opacity-50 fixed inset-0 z-50 flex items-center justify-center bg-black">
             <div class="w-full max-w-md rounded-xl bg-white p-6 shadow-lg dark:bg-gray-800 dark:text-white">
                 <h2 class="mb-4 text-lg font-semibold text-[#033A63] dark:text-gray-200">{{ isEditing ? 'Edit Card' : 'Create New Board' }}</h2>
