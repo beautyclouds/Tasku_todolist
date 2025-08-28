@@ -212,7 +212,9 @@ function closeCard(id: number) {
                                 </span>
 
 
-                                <p class="mb-2 cursor-pointer font-semibold dark:text-gray-100" @click="goToCard(task.id)">
+                                <p 
+                                  class="mb-2 cursor-pointer font-semibold dark:text-gray-100 whitespace-nowrap overflow-hidden text-ellipsis" 
+                                  @click="goToCard(task.id)">
                                     {{ task.title }}
                                 </p>
 
@@ -322,3 +324,7 @@ function closeCard(id: number) {
         </div>
     </AppLayout>
 </template>
+
+<style scoped>
+/* Styling tambahan, jika diperlukan. Tailwind sebagian besar sudah cukup. */
+</style>
