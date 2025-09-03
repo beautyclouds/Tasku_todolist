@@ -198,7 +198,7 @@ function closeCard(id: number) {
                                 </span>
 
                                 <span
-                                    v-if="section.label.includes('Collaboration')"
+                                    v-else-if="section.label.includes('Collaboration')"
                                     :class="[
                                         'absolute top-2 right-2 text-[10px] font-semibold px-2 py-0.5 rounded-full shadow',
                                         task.status === 'Pending' && 'bg-orange-200 text-orange-700',
@@ -321,6 +321,4 @@ function closeCard(id: number) {
     </AppLayout>
 </template>
 
-<style scoped>
-/* Styling tambahan, jika diperlukan. Tailwind sebagian besar sudah cukup. */
-</style>
+
