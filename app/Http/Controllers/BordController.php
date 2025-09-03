@@ -51,14 +51,22 @@ class BordController extends Controller
 
     public function show($id)
     {
-        $card = BoardCard::with(['tasks', 'user', 'collaborators'])->findOrFail($id);
-        $allUsers = User::all(); // Ganti Member dengan User
+        $card = BoardCard::with([
+            'tasks.histories' => function ($q) {
+                $q->latest()->take(5)->with('user');
+            },
+            'user',
+            'collaborators'
+        ])->findOrFail($id);
+
+        $allUsers = User::all();
 
         return Inertia::render('board/Show', [
             'card' => $card,
-            'allUsers' => $allUsers, // Ganti allMembers dengan allUsers
+            'allUsers' => $allUsers,
         ]);
     }
+
 
     public function store(Request $request)
     {
@@ -127,17 +135,30 @@ class BordController extends Controller
     public function toggleTask(Request $request, $id)
     {
         $task = SubTask::findOrFail($id);
+
+        // Tentukan aksi
+        $action = $task->is_done ? 'unchecked' : 'checked';
+
+        // Update status
         $task->is_done = !$task->is_done;
         $task->save();
 
+        // Simpan riwayat
+        $task->histories()->create([
+            'user_id' => Auth::id(),
+            'action' => $action,
+        ]);
+
+        // Update status card
         $card = $task->card;
         if ($card) {
             $this->updateCardStatus($card);
             return redirect()->route('board.show', $card->id);
         }
 
-        return redirect()->route('board.index')->withErrors('Card not found for this task.'); // Diperbaiki: ganti 'board' dengan 'board.index'
+        return redirect()->route('board.index')->withErrors('Card not found for this task.');
     }
+
 
     private function updateCardStatus(BoardCard $card)
     {

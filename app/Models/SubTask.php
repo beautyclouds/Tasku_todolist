@@ -20,4 +20,9 @@ class SubTask extends Model
         return $this->belongsTo(BoardCard::class, 'board_card_id'); // pastikan nama foreign key benar
     }
 
+    public function histories()
+    {
+        return $this->hasMany(\App\Models\SubtaskHistory::class, 'subtask_id');
+    }
+
 }
