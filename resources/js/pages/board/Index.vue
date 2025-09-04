@@ -218,7 +218,7 @@ function closeCard(id: number) {
                                 <ul v-if="getSubtasks(task).length" class="mb-2 text-xs space-y-1">
                                     <li v-for="sub in getSubtasks(task)" :key="sub.id" class="flex items-center gap-2">
                                         <!-- Perbaikan: Hapus 'disabled' dan tambahkan event handler -->
-                                        <input type="checkbox" :checked="sub.is_completed" @change="toggleSubtask(task, sub)" />
+                                        <input type="checkbox" :checked="sub.is_completed" @change="toggleSubtask(task, sub)" disabled/>
                                         <span :class="{ 'line-through text-gray-400': sub.is_completed }">
                                             {{ sub.title }}
                                         </span>
