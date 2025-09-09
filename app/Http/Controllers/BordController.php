@@ -235,10 +235,15 @@ class BordController extends Controller
     {
         $card = BoardCard::findOrFail($id);
 
-        $card->status = 'Completed';
+        if ($card->user_id !== Auth::id()) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        $card->status = 'archived';
         $card->closed_at = now();
         $card->save();
 
-        return back()->with('success', 'Card berhasil di-close.');
+        return redirect()->route('history.index')->with('success', 'Card berhasil di-close.');
     }
+
 }

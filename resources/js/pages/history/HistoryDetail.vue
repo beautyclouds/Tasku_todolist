@@ -8,77 +8,81 @@ const props = defineProps({
 </script>
 
 <template>
+  <Head title="Detail History Card" />
   <AppLayout>
-    <Head title="Detail History Card" />
+    <!-- Card Details -->
+    <div class="p-6 border rounded-xl shadow-md bg-white dark:bg-gray-800 space-y-3">
+      <!-- 🔙 Tombol Kembali -->
+      <a
+        href="/history"
+        class="inline-flex items-center text-3xl font-extrabold text-[#033A63] transition hover:text-[#022d4d] dark:text-blue-400 dark:hover:text-blue-300"
+      >
+        ←
+      </a>
+      <h1
+        class="mb-2 flex items-center gap-2 text-2xl font-bold text-[#033A63] dark:text-gray-100"
+      >
+        📋 {{ props.card.title }}
+      </h1>
+      <p>
+        <span><strong class="text-[#033A63]">Priority:</strong> {{ props.card.priority }}</span> | 
+        <span><strong class="text-[#033A63]">Status:</strong>{{ props.card.status }}</span>
+      </p>
 
-    <div class="p-6 space-y-4">
-      <!-- Header -->
-      <div class="items-center justify-between">
-        <h2 class="text-xl font-bold">Detail History Card</h2>
-        <Link
-          href="/history"
-          class="text-gray-700 text-2xl font-bold hover:text-gray-900"
-        >
-          ←
-      </Link>
+      <p><strong class="text-[#033A63]">🗓️ Deadline:</strong> {{ card.deadline }}</p>
+      <p><strong class="text-[#033A63]">🗓️ Closed At:</strong> {{ card.closed_at ?? '-' }}</p>
+
+      <!-- Owner -->
+      <div class="mt-4">
+        <strong class="mb-2 block text-[#033A63]">Owner:</strong>
+        <div class="inline-flex items-center gap-2 rounded-full bg-gray-100 px-3 py-1 dark:bg-gray-700">
+          <img
+            :src="card.user?.photo ? card.user.photo : `https://ui-avatars.com/api/?name=${card.user?.name}`"
+            :alt="card.user?.name"
+            class="h-8 w-8 rounded-full border-2 border-white shadow dark:border-gray-700 object-cover"
+          />
+          <span class="text-sm font-medium dark:text-gray-200">
+            {{ card.user?.name }} <span class="text-xs text-gray-900 dark:text-gray-400">(owner)</span>
+          </span>
+        </div>
       </div>
 
-      <!-- Card Details -->
-      <div class="p-6 border rounded-xl shadow-md bg-white dark:bg-gray-800 space-y-3">
-        <p><strong>Judul:</strong> {{ card.title }}</p>
-        <p><strong>Status:</strong> 
-          <span 
-            :class="{
-              'text-yellow-600': card.status === 'In Progress',
-              'text-green-600': card.status === 'Completed',
-              'text-gray-700': card.status === 'Pending',
-              'text-red-600': card.status === 'archived'
-            }"
+      <!-- Collaborators -->
+      <div class="mt-4">
+        <strong class="mb-2 block text-[#033A63]">👥 Collaborators:</strong>
+        <div class="flex flex-wrap gap-2">
+          <div
+            v-for="member in card.collaborators"
+            :key="member.id"
+            class="flex items-center gap-2 rounded-full bg-gray-100 px-3 py-1 dark:bg-gray-700"
           >
-            {{ card.status }}
-          </span>
-        </p>
-        <p><strong>Deadline:</strong> {{ card.deadline }}</p>
-        <p><strong>Closed At:</strong> {{ card.closed_at ?? '-' }}</p>
-
-        <!-- Members -->
-        <div class="mt-4">
-          <strong class="mb-2 block">Members:</strong>
-          <div class="flex flex-wrap gap-2">
-            <div
-              v-for="member in card.members"
-              :key="member.id"
-              class="flex items-center gap-2 rounded-full bg-gray-100 px-3 py-1 dark:bg-gray-700"
-            >
-              <img
-                :src="member.photo ? member.photo : `https://ui-avatars.com/api/?name=${member.name}`"
-                :alt="member.name"
-                class="h-8 w-8 rounded-full border-2 border-white shadow dark:border-gray-700 object-cover"
-              />
-              <span class="text-sm font-medium dark:text-gray-200">{{ member.name }}</span>
-            </div>
-            <span v-if="!card.members || card.members.length === 0" class="text-sm text-gray-400">-</span>
+            <img
+              :src="member.photo ? member.photo : `https://ui-avatars.com/api/?name=${member.name}`"
+              :alt="member.name"
+              class="h-8 w-8 rounded-full border-2 border-white shadow dark:border-gray-700 object-cover"
+            />
+            <span class="text-sm font-medium dark:text-gray-200">{{ member.name }}</span>
           </div>
+          <span v-if="!card.collaborators || card.collaborators.length === 0" class="text-sm text-gray-400">-</span>
         </div>
+      </div>
 
-        <!-- Subtasks -->
-        <div class="mt-6">
-          <strong>Subtasks:</strong>
-          <div class="mt-2 space-y-2">
-            <div
-              v-for="task in card.tasks"
-              :key="task.id"
-              class="flex items-start space-x-2 bg-gray-50 dark:bg-gray-700 p-2 rounded-lg"
-            >
-              <input type="checkbox" checked disabled class="mt-1" />
-              <div>
-                <p class="font-medium dark:text-gray-200">{{ task.name }}</p>
-                <p class="text-sm text-gray-600 dark:text-gray-300">{{ task.description }}</p>
-              </div>
+      <!-- Subtasks -->
+      <div class="mt-6">
+        <strong class="text-[#033A63]">📌 Subtasks:</strong>
+        <div class="mt-2 space-y-2">
+          <div
+            v-for="task in card.tasks"
+            :key="task.id"
+            class="flex items-start space-x-2 bg-gray-50 dark:bg-gray-700 p-2 rounded-lg"
+          >
+            <input type="checkbox" checked disabled class="mt-1" />
+            <div>
+              <p class="font-medium dark:text-gray-200">{{ task.name }}</p>
+              <p class="text-sm text-gray-600 dark:text-gray-300">{{ task.description }}</p>
             </div>
           </div>
         </div>
-
       </div>
     </div>
   </AppLayout>

@@ -255,15 +255,18 @@ function closeCard(id: number) {
                                     >
                                         Edit
                                     </button>
+                                    <!-- Tombol Delete hanya muncul kalau card kolaborasi DAN user login adalah owner -->
                                     <button
+                                        v-if="task.user.id === $page.props.auth.user.id"
                                         @click="deleteCard(task.id)"
                                         class="text-xs text-red-600 hover:underline dark:text-red-400 dark:hover:text-red-300"
                                     >
                                         Delete
                                     </button>
-                                    <!-- Tombol Close hanya muncul kalau status Completed -->
+
+                                    <!-- Tombol Close hanya muncul kalau card kolaborasi, status Completed, DAN user login adalah owner -->
                                     <button
-                                        v-if="task.status === 'Completed'"
+                                        v-if="task.status === 'Completed' && task.user.id === $page.props.auth.user.id"
                                         @click="closeCard(task.id)"
                                         class="text-xs text-red-600 hover:underline dark:text-red-400 dark:hover:text-red-300"
                                     >

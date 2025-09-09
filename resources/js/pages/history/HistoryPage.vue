@@ -27,24 +27,24 @@ const props = defineProps({
                     <div class="flex items-center justify-between text-sm text-gray-500 mb-4">
                         <div class="flex items-center gap-1">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
                             </svg>
                             <span>Deadline: {{ card.deadline }}</span>
                         </div>
                         <div class="flex items-center gap-1">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7 7h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7 7h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
                             </svg>
                             <span>Closed: {{ card.closed_at }}</span>
                         </div>
                     </div>
 
                     <!-- Members -->
-                    <div v-if="card.members" class="mb-2 flex items-center gap-2">
-                        <span class="text-xs font-semibold dark:text-gray-300">Members:</span>
+                    <div v-if="card.collaborators && card.collaborators.length > 0" class="mb-2 flex items-center gap-2">
+                        <span class="text-xs font-semibold dark:text-gray-300">Collaborators:</span>
                         <div class="flex -space-x-2">
                             <img
-                                v-for="member in card.members"
+                                v-for="member in card.collaborators"
                                 :key="member.id"
                                 :src="member.photo ? member.photo : `https://ui-avatars.com/api/?name=${member.name}`"
                                 :alt="member.name"
@@ -53,9 +53,9 @@ const props = defineProps({
                         </div>
                     </div>
 
-                    <!-- Jika card tidak punya member, tetap tampil "Members: -" -->
+                    <!-- Kalau tidak ada collaborators -->
                     <div v-else class="mb-2 flex items-center gap-2">
-                        <span class="text-xs font-semibold dark:text-gray-300">Members:</span>
+                        <span class="text-xs font-semibold dark:text-gray-300">Collaborators:</span>
                         <span class="text-xs text-gray-400">-</span>
                     </div>
 
