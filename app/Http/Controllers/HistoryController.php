@@ -14,19 +14,23 @@ class HistoryController extends Controller
     // Halaman list history
     public function index()
     {
-        // Ambil ID user yang sedang login
         $userId = Auth::id();
 
-        // Load cards berdasarkan user yang sedang login dan yang sudah di-close
         $cards = BoardCard::with(['tasks', 'user:id,name', 'collaborators'])
             ->whereNotNull('closed_at')
-            ->where('user_id', $userId) // Tambahkan filter ini
+            ->where(function ($query) use ($userId) {
+                $query->where('user_id', $userId) // owner
+                      ->orWhereHas('collaborators', function ($q) use ($userId) {
+                          $q->where('users.id', $userId); // kolaborator
+                      });
+            })
             ->get();
 
         return Inertia::render('history/HistoryPage', [
             'cards' => $cards,
         ]);
     }
+
 
     // Halaman detail history
     public function show($id)
