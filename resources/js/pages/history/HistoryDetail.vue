@@ -25,16 +25,16 @@ const props = defineProps({
         📋 {{ props.card.title }}
       </h1>
       <p>
-        <span><strong class="text-[#033A63]">Priority:</strong> {{ props.card.priority }}</span> | 
-        <span><strong class="text-[#033A63]">Status:</strong>{{ props.card.status }}</span>
+        <span><strong>Priority:</strong> {{ props.card.priority }}</span> | 
+        <span><strong>Status:</strong>{{ props.card.status }}</span>
       </p>
 
-      <p><strong class="text-[#033A63]">🗓️ Deadline:</strong> {{ card.deadline }}</p>
-      <p><strong class="text-[#033A63]">🗓️ Closed At:</strong> {{ card.closed_at ?? '-' }}</p>
+      <p><strong>🗓️ Deadline:</strong> {{ card.deadline }}</p>
+      <p><strong>🗓️ Closed At:</strong> {{ card.closed_at ?? '-' }}</p>
 
       <!-- Owner -->
       <div class="mt-4">
-        <strong class="mb-2 block text-[#033A63]">Owner:</strong>
+        <strong class="mb-2 block">Owner:</strong>
         <div class="inline-flex items-center gap-2 rounded-full bg-gray-100 px-3 py-1 dark:bg-gray-700">
           <img
             :src="card.user?.photo ? card.user.photo : `https://ui-avatars.com/api/?name=${card.user?.name}`"
@@ -49,7 +49,7 @@ const props = defineProps({
 
       <!-- Collaborators -->
       <div class="mt-4">
-        <strong class="mb-2 block text-[#033A63]">👥 Collaborators:</strong>
+        <strong class="mb-2 block">👥 Collaborators:</strong>
         <div class="flex flex-wrap gap-2">
           <div
             v-for="member in card.collaborators"
@@ -69,7 +69,7 @@ const props = defineProps({
 
       <!-- Subtasks -->
       <div class="mt-6">
-        <strong class="text-[#033A63]">📌 Subtasks:</strong>
+        <strong>📌 Subtasks:</strong>
         <div class="mt-2 space-y-2">
           <div
             v-for="task in card.tasks"

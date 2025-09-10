@@ -102,9 +102,7 @@ const closeHistory = () => {
 <template>
     <Head title="Card Detail" />
     <AppLayout>
-        <div
-            class="mx-auto mt-6 w-full rounded-xl bg-white p-6 shadow-md dark:bg-[#333333] dark:text-white"
-        >
+        <div class="p-6 border rounded-xl shadow-md bg-white dark:bg-gray-800 space-y-3">
             <!-- 🔙 Tombol Kembali -->
             <a
                 href="/board"

@@ -59,7 +59,8 @@ class BordController extends Controller
             'collaborators'
         ])->findOrFail($id);
 
-        $allUsers = User::all();
+        // Ambil semua user kecuali owner card
+        $allUsers = User::where('id', '!=', $card->user_id)->get();
 
         return Inertia::render('board/Show', [
             'card' => $card,
