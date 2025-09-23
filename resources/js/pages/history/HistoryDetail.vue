@@ -42,7 +42,7 @@ const props = defineProps({
             class="h-8 w-8 rounded-full border-2 border-white shadow dark:border-gray-700 object-cover"
           />
           <span class="text-sm font-medium dark:text-gray-200">
-            {{ card.user?.name }} <span class="text-xs text-gray-900 dark:text-gray-400">(owner)</span>
+            {{ card.user?.name }} 
           </span>
         </div>
       </div>

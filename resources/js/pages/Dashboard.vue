@@ -90,24 +90,37 @@ const deadlineMap = computed(() => {
                         <h3 class="text-lg font-semibold text-[#113f67] dark:text-gray-200">Overview</h3>
                         <a href="/board" class="text-sm text-blue-600 hover:underline dark:text-gray-200">See more</a>
                     </div>
-                    <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+
+                    <div class="space-y-4">
                         <template v-if="props.recentBoards && props.recentBoards.length > 0">
                             <div
                                 v-for="board in props.recentBoards"
                                 :key="board.id"
-                                class="rounded-xl bg-[#a5bbc9] p-4 shadow transition hover:shadow-md"
+                                class="border-b pb-3 last:border-none"
                             >
-                                <h4 class="mb-1 truncate text-sm font-semibold text-[#113f67]">📌 {{ board.title }}</h4>
-                                <p class="mb-1 text-xs text-gray-700">📅 {{ new Date(board.deadline).toLocaleDateString() }}</p>
-                                <div class="flex flex-wrap items-center gap-2 text-xs text-gray-700">
+                                <!-- Judul + Deadline -->
+                                <div class="flex items-center justify-between">
+                                    <h4 class="font-semibold text-[#113f67]">📌 {{ board.title }}</h4>
+                                    <span class="text-xs text-gray-500">─── {{ new Date(board.deadline).toLocaleDateString() }}</span>
+                                </div>
+
+                                <!-- Progress + Members -->
+                                <div class="mt-1 flex items-center justify-between text-sm text-gray-700">
+                                    <span>
+                                        Progress: 
+                                        <span class="font-medium text-[#113f67]">
+                                            {{ Math.floor(Math.random() * 101) }}%
+                                        </span>
+                                    </span>
+                                    <span>
                                     👥
-                                    <!-- FIX: Gunakan optional chaining untuk menghindari error jika board.members undefined -->
-                                    <span
-                                        v-for="(member, index) in board.members?.slice(0, 3)"
-                                        :key="index"
-                                        class="rounded-full border bg-white px-2 py-1 text-gray-700"
-                                    >
-                                        {{ member.name }}
+                                        <span
+                                            v-for="(member, index) in board.members?.slice(0, 3)"
+                                            :key="index"
+                                            class="ml-1"
+                                        >
+                                            {{ member.name }}
+                                        </span>
                                     </span>
                                 </div>
                             </div>
@@ -117,40 +130,6 @@ const deadlineMap = computed(() => {
                                 Belum ada papan yang baru-baru ini dilihat.
                             </div>
                         </template>
-                    </div>
-                </div>
-
-                <!-- Members -->
-                <div class="mt-6 rounded-xl border-b bg-white p-6 shadow dark:bg-[#333333] dark:text-white">
-                    <div class="mb-4 flex items-center justify-between">
-                        <h3 class="text-lg font-semibold text-[#113f67] dark:text-gray-200">Team Members</h3>
-                        <a href="/member" class="text-sm text-blue-600 hover:underline dark:text-gray-200">See more</a>
-                    </div>
-                    <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                        <div
-                            v-for="member in props.recentMembers"
-                            :key="member.id"
-                            class="flex items-center gap-3 rounded-xl bg-[#a5bbc9] p-3 shadow transition hover:shadow-md"
-                        >
-                            <img
-                                v-if="member.photo"
-                                :src="`/storage/${member.photo}`"
-                                alt="Profile photo"
-                                class="h-15 w-15 rounded-full object-cover"
-                            />
-                            <div v-else class="flex h-15 w-15 items-center justify-center rounded-full border bg-white">
-                                <svg class="h-6 w-6 text-gray-400" fill="currentColor" viewBox="0 0 24 24">
-                                    <path
-                                        d="M12 12c2.7 0 5-2.3 5-5s-2.3-5-5-5-5 2.3-5 5 2.3 5 5 5zm0 2c-3.3 0-10 1.7-10 5v3h20v-3c0-3.3-6.7-5-10-5z"
-                                    />
-                                </svg>
-                            </div>
-                            <div>
-                                <p class="truncate text-sm font-semibold text-[#113f67]">
-                                    {{ member.name }}
-                                </p>
-                            </div>
-                        </div>
                     </div>
                 </div>
             </div>

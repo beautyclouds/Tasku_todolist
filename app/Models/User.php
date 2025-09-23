@@ -32,7 +32,7 @@ class User extends Authenticatable
     }
 
     /**
-     * Relasi ke board yang dia buat.
+     * Relasi ke board yang dia buat (owner)
      */
     public function myBoards(): HasMany
     {
@@ -40,10 +40,36 @@ class User extends Authenticatable
     }
 
     /**
-     * Relasi ke board di mana dia diundang sebagai kolaborator.
+     * Relasi ke board di mana dia diundang sebagai kolaborator
      */
     public function collaborationBoards(): BelongsToMany
     {
         return $this->belongsToMany(BoardCard::class, 'board_collaborator', 'user_id', 'board_card_id');
     }
+
+    /**
+     * Relasi untuk mengecek status aktif (hanya jika user kolaborator)
+     */
+    public function cards(): BelongsToMany
+    {
+        return $this->collaborationBoards();
+    }
+
+    /**
+    * Accessor untuk status user
+    */
+    public function getStatusAttribute()
+    {
+        // User kolaborator di board aktif
+        $activeCollab = $this->collaborationBoards()->whereNull('closed_at')->exists();
+
+        // User owner dari board yang punya kolaborator aktif
+        $activeOwner = $this->myBoards()
+            ->whereNull('closed_at')
+            ->whereHas('collaborators') // pastikan board itu punya kolaborator
+            ->exists();
+
+        return ($activeCollab || $activeOwner) ? 'Aktif' : 'Tidak Aktif';
+    }
+
 }

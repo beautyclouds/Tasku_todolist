@@ -2,37 +2,37 @@
 import AppLayout from '@/layouts/AppLayout.vue';
 import { type BreadcrumbItem } from '@/types';
 import { Head, router } from '@inertiajs/vue3';
-import { computed, defineProps, ref } from 'vue';
+import { computed, defineProps, ref, watch } from 'vue';
 
 const breadcrumbs: BreadcrumbItem[] = [{ title: 'Board', href: '/board' }];
 
-// Perbaikan: Menerima myBoards dan collaborationBoards secara terpisah
 const props = defineProps<{
-    myBoards: {
-        id: number;
-        title: string;
-        deadline: string;
-        priority: string;
-        status: string;
-        is_revised?: boolean;
-        user: { id: number; name: string };
-        collaborators: { id: number; name: string; photo: string | null }[];
-        tasks?: { id: number; name: string; is_done: boolean }[];
-    }[];
-    collaborationBoards: {
-        id: number;
-        title: string;
-        deadline: string;
-        priority: string;
-        status: string;
-        is_revised?: boolean;
-        user: { id: number; name: string };
-        collaborators: { id: number; name: string; photo: string | null }[];
-        tasks?: { id: number; name: string; is_done: boolean }[];
-    }[];
+    myBoards: any[];
+    collaborationBoards: any[];
+    filters?: { search?: string };
 }>();
 
-// computed sekarang bekerja dengan properti myBoards
+// Search input (terisi dari server jika ada)
+const search = ref(props.filters?.search ?? '');
+
+// Debounce helper simple
+let searchTimeout: number | undefined;
+watch(search, (val) => {
+    if (searchTimeout) clearTimeout(searchTimeout);
+    // debounce 400ms
+    searchTimeout = window.setTimeout(() => {
+        router.get(
+            route('board.index'),
+            { search: val },
+            {
+                preserveState: true,
+                replace: true,
+            }
+        );
+    }, 400);
+});
+
+// computed arrays (my boards)
 const pendingTasks = computed(() =>
     props.myBoards.filter(c => c.status === 'Pending')
 );
@@ -48,8 +48,6 @@ const onProgressTasks = computed(() =>
 const completedTasks = computed(() =>
     props.myBoards.filter(c => c.status === 'Completed')
 );
-
-// collaborationTasks tidak lagi dibutuhkan karena sudah ada props.collaborationBoards
 
 const showModal = ref(false);
 const isEditing = ref(false);
@@ -77,7 +75,6 @@ const openEditModal = (card: any) => {
 };
 
 const submitCard = () => {
-    // Perbaikan: Ganti endpoint POST untuk membuat card baru ke '/board/create'
     const url = isEditing.value ? `/board/${newCard.value.id}` : '/board/create';
 
     if (isEditing.value) {
@@ -110,6 +107,7 @@ const goToCard = (id: number) => {
 };
 
 const isOverdue = (deadline: string): boolean => {
+    if (!deadline) return false;
     const today = new Date();
     const due = new Date(deadline);
     return due.getTime() < today.getTime();
@@ -125,14 +123,23 @@ const getSubtasks = (task: any): NormalizedSubtask[] => {
     }));
 };
 
-// Perbaikan: `toggleSubtask` sekarang bisa dipanggil dari template
-const toggleSubtask = (card: any, subtask: any) => {
+// Toggle single subtask locally + send updated subtasks array to backend
+const toggleSubtask = (card: any, subtask: NormalizedSubtask) => {
+    // Toggle local state first
     subtask.is_completed = !subtask.is_completed;
 
+    // Build payload: take current subtasks from card via getSubtasks
+    const normalized = getSubtasks(card).map(s => ({
+        id: s.id,
+        is_completed: s.is_completed,
+    }));
+
     router.put(`/board/${card.id}/subtasks`, {
-        subtasks: card.subtasks
+        subtasks: normalized
     }, {
-        onSuccess: () => {},
+        onSuccess: () => {
+            // optionally do something on success
+        },
         onError: (errors) => {
             console.error(errors);
         }
@@ -154,6 +161,7 @@ function closeCard(id: number) {
         <div class="flex min-h-screen flex-col gap-4 bg-[#f2f2f2] p-6 dark:bg-gray-900">
             <div class="flex items-center justify-between">
                 <input
+                    v-model="search"
                     type="text"
                     placeholder="Search task"
                     class="w-full max-w-xl rounded-xl border border-gray-300 bg-white px-4 py-3 shadow-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400"
@@ -199,12 +207,10 @@ function closeCard(id: number) {
 
                                 <span
                                     v-else-if="section.label.includes('Collaboration')"
-                                    :class="[
-                                        'absolute top-2 right-2 text-[10px] font-semibold px-2 py-0.5 rounded-full shadow',
+                                    :class="[ 'absolute top-2 right-2 text-[10px] font-semibold px-2 py-0.5 rounded-full shadow',
                                         task.status === 'Pending' && 'bg-orange-200 text-orange-700',
                                         task.status === 'In Progress' && 'bg-yellow-200 text-yellow-700',
-                                        task.status === 'Completed' && 'bg-green-200 text-green-700'
-                                    ]"
+                                        task.status === 'Completed' && 'bg-green-200 text-green-700' ]"
                                 >
                                     {{ task.status }}
                                 </span>
@@ -217,7 +223,6 @@ function closeCard(id: number) {
                                 <!-- Subtasks -->
                                 <ul v-if="getSubtasks(task).length" class="mb-2 text-xs space-y-1">
                                     <li v-for="sub in getSubtasks(task)" :key="sub.id" class="flex items-center gap-2">
-                                        <!-- Perbaikan: Hapus 'disabled' dan tambahkan event handler -->
                                         <input type="checkbox" :checked="sub.is_completed" @change="toggleSubtask(task, sub)" disabled/>
                                         <span :class="{ 'line-through text-gray-400': sub.is_completed }">
                                             {{ sub.title }}
@@ -255,7 +260,6 @@ function closeCard(id: number) {
                                     >
                                         Edit
                                     </button>
-                                    <!-- Tombol Delete hanya muncul kalau card kolaborasi DAN user login adalah owner -->
                                     <button
                                         v-if="task.user.id === $page.props.auth.user.id"
                                         @click="deleteCard(task.id)"
@@ -264,7 +268,6 @@ function closeCard(id: number) {
                                         Delete
                                     </button>
 
-                                    <!-- Tombol Close hanya muncul kalau card kolaborasi, status Completed, DAN user login adalah owner -->
                                     <button
                                         v-if="task.status === 'Completed' && task.user.id === $page.props.auth.user.id"
                                         @click="closeCard(task.id)"
@@ -323,5 +326,3 @@ function closeCard(id: number) {
         </div>
     </AppLayout>
 </template>
-
-
