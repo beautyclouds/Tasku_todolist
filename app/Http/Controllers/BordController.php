@@ -245,4 +245,29 @@ class BordController extends Controller
 
         return redirect()->route('history.index')->with('success', 'Card berhasil di-close.');
     }
+
+    public function removeMember($cardId, $userId)
+    {
+        $card = BoardCard::findOrFail($cardId);
+
+        // Hanya owner yang bisa keluarkan member
+        if ($card->user_id !== Auth::id()) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        $card->collaborators()->detach($userId);
+
+        return back()->with('success', 'Member removed!');
+    }
+
+    public function leaveCard($cardId)
+    {
+        $card = BoardCard::findOrFail($cardId);
+
+        // Hanya berlaku untuk user biasa (collaborator)
+        $card->collaborators()->detach(Auth::id());
+
+        return redirect()->route('board.index')->with('success', 'You left the card.');
+    }
+
 }

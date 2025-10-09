@@ -97,6 +97,24 @@ const closeHistory = () => {
     showHistoryModal.value = false;
     selectedHistories.value = [];
 };
+
+// 🔹 State buat simpan menu yang lagi kebuka
+const activeMenu = ref<number | null>(null);
+
+
+// 🔹 Fungsi toggle menu titik 3
+const openMenu = (id: number) => {
+    if (activeMenu.value === id) {
+        activeMenu.value = null;
+    } else {
+        activeMenu.value = id;
+    }
+};
+
+// 🔹 Kalau mau close menu pas klik di luar
+const closeMenu = () => {
+    activeMenu.value = null;
+};
 </script>
 
 <template>
@@ -154,13 +172,13 @@ const closeHistory = () => {
                     <div
                         v-for="collaborator in props.card.collaborators"
                         :key="collaborator.id"
-                        class="flex items-center gap-2 rounded-full bg-gray-100 px-2 py-1 dark:bg-gray-700"
+                        class="flex items-center gap-2 rounded-full bg-gray-100 px-2 py-1 dark:bg-gray-700 relative"
                     >
                         <img
                             :src="
                                 collaborator.photo
-                                    ? `/storage/${collaborator.photo}`
-                                    : `https://ui-avatars.com/api/?name=${collaborator.name}`
+                                ? `/storage/${collaborator.photo}`
+                                : `https://ui-avatars.com/api/?name=${collaborator.name}`
                             "
                             :alt="collaborator.name"
                             class="h-8 w-8 rounded-full border-2 border-white shadow dark:border-gray-700"
@@ -168,6 +186,45 @@ const closeHistory = () => {
                         <span class="text-sm font-medium dark:text-gray-200">
                             {{ collaborator.name }}
                         </span>
+
+                        <!-- 🔹 Menu titik 3 -->
+                        <div class="relative" v-if="props.card.user.id === $page.props.auth.user.id || collaborator.id === $page.props.auth.user.id">
+                            <button
+                                @click="openMenu(collaborator.id)"
+                                class="ml-2 px-2 text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white"
+                            >
+                                ⋮
+                            </button>
+
+                            <!-- Dropdown -->
+                            <div
+                                v-if="activeMenu === collaborator.id"
+                                class="absolute right-0 mt-1 w-28 rounded-md border bg-white shadow-lg dark:border-gray-600 dark:bg-gray-700"
+                            >
+                                <!-- ✅ Kalau owner -->
+                                <button
+                                    v-if="props.card.user.id === $page.props.auth.user.id"
+                                    @click="router.delete(`/board/${props.card.id}/remove/${collaborator.id}`, {
+                                        preserveScroll: true,
+                                        onSuccess: () => router.reload({ only: ['card'] })
+                                    })"
+                                    class="block w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-gray-100 dark:text-red-400 dark:hover:bg-gray-600"
+                                >
+                                    Remove
+                                </button>
+
+                                <!-- ✅ Kalau collaborator (dirinya sendiri) -->
+                                <button
+                                    v-else-if="collaborator.id === $page.props.auth.user.id"
+                                    @click="router.delete(`/board/${props.card.id}/leave`, {
+                                        onSuccess: () => router.visit('/board')
+                                    })"
+                                    class="block w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-gray-100 dark:text-red-400 dark:hover:bg-gray-600"
+                                >
+                                    Leave
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>

@@ -28,6 +28,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/board/{id}/invite', [BordController::class, 'inviteMember'])->name('board.invite');
     Route::put('/board/{card}/subtasks', [BordController::class, 'updateSubtasks'])->name('board.subtasks.update');
     Route::put('/board/{id}/close', [BordController::class, 'close'])->name('board.close');
+    Route::delete('/board/{card}/leave', [BordController::class, 'leaveCard'])->name('board.leave');
+    Route::delete('/board/{card}/remove/{user}', [BordController::class, 'removeMember'])->name('board.remove');
 });
 
 

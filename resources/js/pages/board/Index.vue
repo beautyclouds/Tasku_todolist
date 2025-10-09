@@ -32,6 +32,15 @@ watch(search, (val) => {
     }, 400);
 });
 
+// ✅ fungsi untuk reset pencarian
+const resetSearch = () => {
+    search.value = '';
+    router.get(route('board.index'), {}, {
+        preserveState: false,
+        replace: true,
+    });
+};
+
 // computed arrays (my boards)
 const pendingTasks = computed(() =>
     props.myBoards.filter(c => c.status === 'Pending')
@@ -125,10 +134,8 @@ const getSubtasks = (task: any): NormalizedSubtask[] => {
 
 // Toggle single subtask locally + send updated subtasks array to backend
 const toggleSubtask = (card: any, subtask: NormalizedSubtask) => {
-    // Toggle local state first
     subtask.is_completed = !subtask.is_completed;
 
-    // Build payload: take current subtasks from card via getSubtasks
     const normalized = getSubtasks(card).map(s => ({
         id: s.id,
         is_completed: s.is_completed,
@@ -136,13 +143,6 @@ const toggleSubtask = (card: any, subtask: NormalizedSubtask) => {
 
     router.put(`/board/${card.id}/subtasks`, {
         subtasks: normalized
-    }, {
-        onSuccess: () => {
-            // optionally do something on success
-        },
-        onError: (errors) => {
-            console.error(errors);
-        }
     });
 };
 
@@ -159,13 +159,24 @@ function closeCard(id: number) {
     <Head title="Board" />
     <AppLayout :breadcrumbs="breadcrumbs">
         <div class="flex min-h-screen flex-col gap-4 bg-[#f2f2f2] p-6 dark:bg-gray-900">
+            <!-- Bagian Search + Tombol -->
             <div class="flex items-center justify-between">
-                <input
-                    v-model="search"
-                    type="text"
-                    placeholder="Search task"
-                    class="w-full max-w-xl rounded-xl border border-gray-300 bg-white px-4 py-3 shadow-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400"
-                />
+                <div class="flex w-full max-w-xl items-center gap-2">
+                    <input
+                        v-model="search"
+                        type="text"
+                        placeholder="Search task"
+                        class="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 shadow-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400"
+                    />
+                    <!-- ✅ tombol reset -->
+                    <button
+                        v-if="search"
+                        @click="resetSearch"
+                        class="rounded bg-gray-400 px-4 py-2 text-sm text-white shadow-sm hover:bg-gray-400 dark:bg-gray-600 dark:text-white dark:hover:bg-gray-500"
+                    >
+                        Reset
+                    </button>
+                </div>
                 <button
                     @click="openCreateModal"
                     class="ml-4 rounded-xl bg-[#033A63] px-6 py-2 text-white shadow-md dark:bg-[#34699A] dark:hover:bg-blue-500"
@@ -214,6 +225,7 @@ function closeCard(id: number) {
                                 >
                                     {{ task.status }}
                                 </span>
+
                                 <p 
                                   class="mb-2 cursor-pointer font-semibold dark:text-gray-100 whitespace-nowrap overflow-hidden text-ellipsis" 
                                   @click="goToCard(task.id)">
@@ -280,48 +292,6 @@ function closeCard(id: number) {
                         </div>
                     </div>
                 </template>
-            </div>
-        </div>
-
-        <!-- Modal tetap sama -->
-        <div v-if="showModal" class="bg-opacity-50 fixed inset-0 z-50 flex items-center justify-center bg-black">
-            <div class="w-full max-w-md rounded-xl bg-white p-6 shadow-lg dark:bg-gray-800 dark:text-white">
-                <h2 class="mb-4 text-lg font-semibold text-[#033A63] dark:text-gray-200">{{ isEditing ? 'Edit Card' : 'Create New Board' }}</h2>
-                <div class="space-y-3">
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Judul</label>
-                    <input
-                        v-model="newCard.title"
-                        type="text"
-                        placeholder="Masukkan Judul"
-                        class="w-full rounded border px-3 py-2 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400"
-                    />
-
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Deadline</label>
-                    <input
-                        v-model="newCard.deadline"
-                        type="datetime-local"
-                        class="w-full rounded border px-3 py-2 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-                    />
-
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Status Prioritas</label>
-                    <select v-model="newCard.priority" class="w-full rounded border px-3 py-2 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
-                        <option value="Low">Low</option>
-                        <option value="Normal">Normal</option>
-                        <option value="High">High</option>
-                    </select>
-                </div>
-                <div class="mt-4 flex justify-end gap-2">
-                    <button @click="showModal = false" class="rounded bg-gray-300 px-4 py-2 dark:bg-gray-600 dark:text-white dark:hover:bg-gray-500">
-                        Cancel
-                    </button>
-                    <button
-                        @click="submitCard"
-                        :disabled="!isFormValid"
-                        class="rounded bg-[#033A63] px-4 py-2 text-white disabled:cursor-not-allowed disabled:opacity-50 dark:bg-blue-600 dark:hover:bg-blue-500"
-                    >
-                        {{ isEditing ? 'Update' : 'Save' }}
-                    </button>
-                </div>
             </div>
         </div>
     </AppLayout>
