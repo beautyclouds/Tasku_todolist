@@ -21,11 +21,44 @@ class DashboardController extends Controller
         $completedCount = BoardCard::where('user_id', $userId)->where('status', 'Completed')->count();
 
         // Ambil 3 board terakhir untuk Overview, tapi hanya untuk user yang sedang login
+        // di dalam method index() — gantikan bagian recentBoards lama dengan ini
         $recentBoards = BoardCard::where('user_id', $userId)
-            ->with('user')
+            ->with(['user', 'members', 'tasks']) // pakai nama relasi yang ada: tasks() dan members()
             ->orderBy('created_at', 'desc')
             ->take(3)
-            ->get();
+            ->get()
+            ->map(function ($board) {
+                // hitung progress berdasarkan tasks() dan kolom is_done pada SubTask
+                $total = $board->tasks->count();
+                // cek beberapa kemungkinan nama kolom (umumnya is_done)
+                $done = $board->tasks->filter(function ($t) {
+                    // pastikan aman terhadap null / tipe string/angka
+                    if (isset($t->is_done)) {
+                        return (bool) $t->is_done;
+                    }
+                    if (isset($t->is_completed)) {
+                        return (bool) $t->is_completed;
+                    }
+                    // fallback: coba field bernama done
+                    if (isset($t->done)) {
+                        return (bool) $t->done;
+                    }
+                    return false;
+                })->count();
+
+                $progress = $total > 0 ? round(($done / $total) * 100) : 0;
+
+                return [
+                    'id' => $board->id,
+                    'title' => $board->title,
+                    'deadline' => $board->deadline,
+                    'members' => $board->members->map(function ($m) {
+                        return ['id' => $m->id, 'name' => $m->name, 'photo' => $m->photo ?? null];
+                    })->toArray(),
+                    'progress' => $progress,
+                ];
+            });
+
 
         // Ambil 3 user terbaru (ini tidak perlu difilter, karena memang tujuannya menampilkan semua user)
         $recentUsers = User::orderBy('created_at', 'desc')

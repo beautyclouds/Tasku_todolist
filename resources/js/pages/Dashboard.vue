@@ -7,7 +7,13 @@ const props = defineProps<{
     pendingCount: number;
     inProgressCount: number;
     completedCount: number;
-    recentBoards: { id: number; title: string; deadline: string; members: any[] }[];
+    recentBoards: {
+        id: number;
+        title: string;
+        deadline: string;
+        members: any[];
+        progress: number; // tambahkan ini
+    }[];
     recentMembers: {
         photo: any;
         id: number;
@@ -16,6 +22,7 @@ const props = defineProps<{
     deadlines: { id: number; title: string; deadline: string }[];
     todayTasks: { id: number; title: string; deadline: string }[];
 }>();
+
 
 const breadcrumbs = [{ title: 'Dashboard', href: '/dashboard' }];
 
@@ -110,7 +117,7 @@ const deadlineMap = computed(() => {
                                         <span>
                                             Progress: 
                                             <span class="font-medium text-[#113f67]">
-                                                {{ Math.floor(Math.random() * 101) }}%
+                                                {{ board.progress }}%
                                             </span>
                                         </span>
                                         <span>
