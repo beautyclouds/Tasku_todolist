@@ -293,6 +293,75 @@ function closeCard(id: number) {
                     </div>
                 </template>
             </div>
+
+            <!-- ⬇️ TARUH MODAL DI SINI -->
+            <div
+                v-if="showModal"
+                class="bg-opacity-50 fixed inset-0 z-50 flex items-center justify-center bg-black"
+            >
+                <div
+                    class="w-full max-w-md rounded-xl bg-white p-6 shadow-lg dark:bg-gray-800 dark:text-white"
+                >
+                    <h2 class="mb-4 text-lg font-semibold text-[#033A63] dark:text-gray-200">
+                        {{ isEditing ? 'Edit Card' : 'Create New Board' }}
+                    </h2>
+
+                    <div class="space-y-3">
+                        <label
+                            class="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                        >
+                            Judul
+                        </label>
+                        <input
+                            v-model="newCard.title"
+                            type="text"
+                            placeholder="Masukkan Judul"
+                            class="w-full rounded border px-3 py-2 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400"
+                        />
+
+                        <label
+                            class="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                        >
+                            Deadline
+                        </label>
+                        <input
+                            v-model="newCard.deadline"
+                            type="datetime-local"
+                            class="w-full rounded border px-3 py-2 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                        />
+
+                        <label
+                            class="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                        >
+                            Status Prioritas
+                        </label>
+                        <select
+                            v-model="newCard.priority"
+                            class="w-full rounded border px-3 py-2 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                        >
+                            <option value="Low">Low</option>
+                            <option value="Normal">Normal</option>
+                            <option value="High">High</option>
+                        </select>
+                    </div>
+
+                    <div class="mt-4 flex justify-end gap-2">
+                        <button
+                            @click="showModal = false"
+                            class="rounded bg-gray-300 px-4 py-2 dark:bg-gray-600 dark:text-white dark:hover:bg-gray-500"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            @click="submitCard"
+                            :disabled="!isFormValid"
+                            class="rounded bg-[#033A63] px-4 py-2 text-white disabled:cursor-not-allowed disabled:opacity-50 dark:bg-blue-600 dark:hover:bg-blue-500"
+                        >
+                            {{ isEditing ? 'Update' : 'Save' }}
+                        </button>
+                    </div>
+                </div>
+            </div>
         </div>
     </AppLayout>
 </template>

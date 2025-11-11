@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import AppLayout from '@/layouts/AppLayout.vue';
-import { Head } from '@inertiajs/vue3';
-import { computed, ref } from 'vue';
+import { Head, Link } from '@inertiajs/vue3';
+import { onMounted, computed, ref } from 'vue';
 
 const props = defineProps<{
     pendingCount: number;
@@ -67,6 +67,24 @@ const deadlineMap = computed(() => {
     });
     return map;
 });
+
+//QUOTES
+
+const quotes = [
+  "Kerja kerasmu hari ini akan membuahkan hasil nanti.",
+  "Konsistensi lebih kuat dari motivasi sesaat.",
+  "Jangan berhenti, kamu sudah lebih dekat dari sebelumnya!",
+  "Stay positive, work hard, make it happen.",
+  "Success is the sum of small efforts repeated day in and day out.",
+  "You don’t have to be perfect to be amazing.",
+]
+
+const randomQuote = ref('')
+
+onMounted(() => {
+  const randomIndex = Math.floor(Math.random() * quotes.length)
+  randomQuote.value = quotes[randomIndex]
+})
 </script>
 
 <template>
@@ -108,7 +126,15 @@ const deadlineMap = computed(() => {
                                 >
                                     <!-- Judul + Deadline -->
                                     <div class="flex items-center justify-between">
-                                        <h4 class="font-semibold text-[#113f67]">📌 {{ board.title }}</h4>
+                                        <h4 class="font-semibold text-[#113f67]">
+                                            📌
+                                            <Link
+                                                :href="`/board/${board.id}`"
+                                                class="text-[#113f67] hover:underline hover:text-blue-800 dark:text-gray-200"
+                                            >
+                                                {{ board.title }}
+                                            </Link>
+                                        </h4>
                                         <span class="text-xs text-gray-500">─── {{ new Date(board.deadline).toLocaleDateString() }}</span>
                                     </div>
 
@@ -139,6 +165,10 @@ const deadlineMap = computed(() => {
                                 </div>
                             </template>
                         </div>
+                    </div>
+                    <div class="bg-white p-11 rounded-2xl shadow mt-4 text-center">
+                        <h2 class="text-xl font-semibold text-gray-700 mb-2">💬 Today’s Motivation</h2>
+                        <p class="text-md text-gray-500 italic">"{{ randomQuote }}"</p>
                     </div>
                 </div>
 
