@@ -48,7 +48,7 @@ const viewBoards = (id) => {
 <template>
     <Head title="Member" />
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div class="p-6 min-h-screen bg-[#f2f2f2]">
+        <div class="p-6 min-h-screen bg-[#f2f2f2] dark:bg-[#1a1a1a]">
             <h1 class="text-xl font-bold mb-4">Daftar Member</h1>
 
             <!-- Filter -->
@@ -57,14 +57,14 @@ const viewBoards = (id) => {
                     v-model="search"
                     type="text"
                     placeholder="Cari nama member..."
-                    class="w-full max-w-sm border border-gray-300 bg-white rounded-md px-3 py-2 focus:outline-none focus:ring focus:ring-blue-200"
+                    class="w-full max-w-sm border border-gray-300 bg-white rounded-md px-3 py-2 focus:outline-none focus:ring focus:ring-blue-200 dark:bg-[#333333] dark:border-gray-600"
                 />
 
                 <!-- Tombol reset muncul hanya jika search terisi -->
                 <button
                     v-if="search"
                     @click="resetSearch"
-                    class="bg-gray-400 text-white hover:bg-gray-500 px-4 py-2 rounded-md"
+                    class="bg-gray-400 text-white hover:bg-gray-500 px-4 py-2 rounded-md dark:bg-gray-600 dark:text-white dark:hover:bg-gray-500"
                 >
                     Reset
                 </button>
@@ -74,13 +74,13 @@ const viewBoards = (id) => {
             <div
                 v-for="(user, index) in props.users"
                 :key="user.id"
-                class="bg-white flex items-center justify-between p-4 mb-3 rounded-lg shadow-sm"
+                class="bg-white flex items-center justify-between p-4 mb-3 rounded-lg shadow-sm dark:bg-[#333333]"
             >
                 <div>
-                    <p class="font-semibold text-gray-800">
+                    <p class="font-semibold text-gray-800 dark:text-white">
                         {{ user.name }}
                     </p>
-                    <p class="text-gray-500 text-sm">
+                    <p class="text-gray-500 text-sm dark:text-gray-300">
                         {{ user.email }} •
                         <span
                             :class="user.status === 'Aktif'

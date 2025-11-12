@@ -122,7 +122,7 @@ onMounted(() => {
                                 <div
                                     v-for="board in props.recentBoards"
                                     :key="board.id"
-                                    class="border-b pb-3 last:border-none"
+                                    class="border-b pb-3 last:border-none dark:border-gray-300"
                                 >
                                     <!-- Judul + Deadline -->
                                     <div class="flex items-center justify-between">
@@ -135,14 +135,14 @@ onMounted(() => {
                                                 {{ board.title }}
                                             </Link>
                                         </h4>
-                                        <span class="text-xs text-gray-500">─── {{ new Date(board.deadline).toLocaleDateString() }}</span>
+                                        <span class="text-xs text-gray-500 dark:text-gray-200">─── {{ new Date(board.deadline).toLocaleDateString() }}</span>
                                     </div>
 
                                     <!-- Progress + Members -->
-                                    <div class="mt-1 flex items-center justify-between text-sm text-gray-700">
+                                    <div class="mt-1 flex items-center justify-between text-sm text-gray-700 dark:text-gray-300">
                                         <span>
                                             Progress: 
-                                            <span class="font-medium text-[#113f67]">
+                                            <span class="font-medium text-[#113f67] dark:text-gray-200">
                                                 {{ board.progress }}%
                                             </span>
                                         </span>
@@ -166,9 +166,9 @@ onMounted(() => {
                             </template>
                         </div>
                     </div>
-                    <div class="bg-white p-11 rounded-2xl shadow mt-4 text-center">
-                        <h2 class="text-xl font-semibold text-gray-700 mb-2">💬 Today’s Motivation</h2>
-                        <p class="text-md text-gray-500 italic">"{{ randomQuote }}"</p>
+                    <div class="bg-white p-11 rounded-2xl shadow mt-4 text-center dark:bg-[#333333]">
+                        <h2 class="text-xl font-semibold text-gray-700 mb-2 dark:text-gray-300">💬 Today’s Motivation</h2>
+                        <p class="text-md text-gray-500 italic dark:text-white">"{{ randomQuote }}"</p>
                     </div>
                 </div>
 

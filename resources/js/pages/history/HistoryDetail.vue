@@ -11,11 +11,11 @@ const props = defineProps({
   <Head title="Detail History Card" />
   <AppLayout>
     <!-- Card Details -->
-    <div class="p-6 border rounded-xl shadow-md bg-white dark:bg-gray-800 space-y-3">
+    <div class="p-6 border rounded-xl shadow-md bg-white dark:bg-[#1a1a1a] space-y-3">
       <!-- 🔙 Tombol Kembali -->
       <a
         href="/history"
-        class="inline-flex items-center text-3xl font-extrabold text-[#033A63] transition hover:text-[#022d4d] dark:text-blue-400 dark:hover:text-blue-300"
+        class="inline-flex items-center text-3xl font-extrabold text-[#033A63] transition hover:text-[#022d4d] dark:text-gray-200 dark:hover:text-blue-300"
       >
         ←
       </a>
@@ -74,7 +74,7 @@ const props = defineProps({
           <div
             v-for="task in card.tasks"
             :key="task.id"
-            class="flex items-start space-x-2 bg-gray-50 dark:bg-gray-700 p-2 rounded-lg"
+            class="flex items-start space-x-2 bg-gray-50 dark:bg-[#333333] p-2 rounded-lg"
           >
             <input type="checkbox" checked disabled class="mt-1" />
             <div>

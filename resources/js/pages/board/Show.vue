@@ -120,11 +120,11 @@ const closeMenu = () => {
 <template>
     <Head title="Card Detail" />
     <AppLayout>
-        <div class="p-6 border rounded-xl shadow-md bg-white dark:bg-gray-800 space-y-3">
+        <div class="p-6 border rounded-xl shadow-md bg-white dark:bg-[#1a1a1a] space-y-3">
             <!-- 🔙 Tombol Kembali -->
             <a
                 href="/board"
-                class="inline-flex items-center text-3xl font-extrabold text-[#033A63] transition hover:text-[#022d4d] dark:text-blue-400 dark:hover:text-blue-300"
+                class="inline-flex items-center text-3xl font-extrabold text-[#033A63] transition hover:text-[#022d4d] dark:text-gray-200 dark:hover:text-blue-300"
             >
                 ←
             </a>
@@ -237,7 +237,7 @@ const closeMenu = () => {
                 <form @submit.prevent="inviteMember" class="flex items-center gap-2">
                     <select
                         v-model="inviteForm.email"
-                        class="flex-1 rounded border px-3 py-2 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                        class="flex-1 rounded border px-3 py-2 dark:border-gray-500 dark:bg-gray-600 dark:text-white"
                     >
                         <option value="" disabled>Select a user...</option>
                         <option
@@ -252,7 +252,7 @@ const closeMenu = () => {
                         </option>
                     </select>
                     <button
-                        class="w-[100px] rounded bg-[#033A63] py-1.5 text-l text-white transition hover:bg-[#022d4d] dark:bg-[#34699A] dark:hover:bg-blue-500"
+                        class="w-[100px] rounded bg-[#033A63] py-1.5 text-l text-white transition hover:bg-[#022d4d] dark:bg-[#033A63] dark:hover:bg-gray-500"
                     >
                         Invite
                     </button>
@@ -308,15 +308,15 @@ const closeMenu = () => {
                         v-model="form.name"
                         type="text"
                         placeholder="Add new task..."
-                        class="flex-1 rounded border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-[#033A63] focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:ring-blue-500"
+                        class="flex-1 rounded border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-[#033A63] focus:outline-none dark:border-gray-500 dark:bg-gray-600 dark:text-white dark:focus:ring-blue-500"
                     />
                     <textarea
                         v-model="form.description"
                         placeholder="Add description (optional)"
-                        class="flex-1 rounded border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-[#033A63] focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:ring-blue-500"
+                        class="flex-1 rounded border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-[#033A63] focus:outline-none dark:border-gray-500 dark:bg-gray-600 dark:text-white dark:focus:ring-blue-500"
                     ></textarea>
                     <button
-                        class="w-[100px] rounded bg-[#033A63] py-1.5 text-l text-white transition hover:bg-[#022d4d] dark:bg-[#34699A] dark:hover:bg-blue-500"
+                        class="w-[100px] rounded bg-[#033A63] py-1.5 text-l text-white transition hover:bg-[#022d4d] dark:bg-[#033A63] dark:hover:bg-gray-500"
                     >
                         Add
                     </button>

@@ -158,7 +158,7 @@ function closeCard(id: number) {
 <template>
     <Head title="Board" />
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div class="flex min-h-screen flex-col gap-4 bg-[#f2f2f2] p-6 dark:bg-gray-900">
+        <div class="flex min-h-screen flex-col gap-4 bg-[#f2f2f2] p-6 dark:bg-[#1a1a1a]">
             <!-- Bagian Search + Tombol -->
             <div class="flex items-center justify-between">
                 <div class="flex w-full max-w-xl items-center gap-2">
@@ -166,20 +166,20 @@ function closeCard(id: number) {
                         v-model="search"
                         type="text"
                         placeholder="Search task"
-                        class="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 shadow-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400"
+                        class="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 shadow-sm dark:border-gray-600 dark:bg-[#333333] dark:text-white dark:placeholder-gray-400"
                     />
                     <!-- ✅ tombol reset -->
                     <button
                         v-if="search"
                         @click="resetSearch"
-                        class="rounded bg-gray-400 px-4 py-2 text-sm text-white shadow-sm hover:bg-gray-400 dark:bg-gray-600 dark:text-white dark:hover:bg-gray-500"
+                        class="rounded bg-gray-400 px-4 py-2 text-white shadow-sm hover:bg-gray-400 dark:bg-gray-600 dark:text-white dark:hover:bg-gray-500"
                     >
                         Reset
                     </button>
                 </div>
                 <button
                     @click="openCreateModal"
-                    class="ml-4 rounded-xl bg-[#033A63] px-6 py-2 text-white shadow-md dark:bg-[#34699A] dark:hover:bg-blue-500"
+                    class="ml-4 rounded-xl bg-[#033A63] px-6 py-2 text-white shadow-md dark:bg-gray-700 dark:hover:bg-blue-500"
                 >
                     + Create New
                 </button>
@@ -189,10 +189,10 @@ function closeCard(id: number) {
             <div class="grid grid-cols-1 gap-6 md:grid-cols-4">
                 <template
                     v-for="(section, index) in [
-                        { label: '🟤 Pending (My Boards)', items: pendingTasks, color: 'text-gray-700', bg: 'bg-orange-100' },
-                        { label: '🟡 In Progress (My Boards)', items: onProgressTasks, color: 'text-yellow-600', bg: 'bg-yellow-100' },
-                        { label: '🟢 Completed (My Boards)', items: completedTasks, color: 'text-green-600', bg: 'bg-green-100' },
-                        { label: '🔵 Collaboration', items: props.collaborationBoards, color: 'text-blue-600', bg: 'bg-blue-100' },
+                        { label: '🟤 Pending (My Boards)', items: pendingTasks, color: 'text-gray-700', bg: 'bg-orange-100 dark:bg-orange-300/30' },
+                        { label: '🟡 In Progress (My Boards)', items: onProgressTasks, color: 'text-yellow-600', bg: 'bg-yellow-100 dark:bg-yellow-300/30' },
+                        { label: '🟢 Completed (My Boards)', items: completedTasks, color: 'text-green-600', bg: 'bg-green-100 dark:bg-green-300/30' },
+                        { label: '🔵 Collaboration', items: props.collaborationBoards, color: 'text-blue-600', bg: 'bg-blue-100 dark:bg-blue-300/30' },
                     ]"
                     :key="index"
                 >
@@ -258,24 +258,24 @@ function closeCard(id: number) {
 
                                 <div class="mb-1 text-sm text-gray-600 dark:text-gray-300">📅 {{ task.deadline }}</div>
                                 <div
-                                    v-if="task.status === 'In Progress' && isOverdue(task.deadline)"
-                                    class="mb-1 text-xs font-semibold text-red-600 dark:text-red-400"
+                                    v-if="task.status !== 'Completed' && isOverdue(task.deadline)"
+                                    class="mb-1 text-xs font-semibold text-red-600 dark:text-red-700"
                                 >
                                     ⚠️ Overdue
                                 </div>
-                                <div class="mb-2 text-xs text-gray-500 dark:text-gray-400">{{ task.priority }} Priority</div>
+                                <div class="mb-2 text-xs text-gray-500 dark:text-gray-200">{{ task.priority }} Priority</div>
 
                                 <div class="flex gap-2">
                                     <button
                                         @click="openEditModal(task)"
-                                        class="text-xs text-blue-600 hover:underline dark:text-blue-400 dark:hover:text-blue-300"
+                                        class="text-xs text-blue-600 hover:underline dark:text-blue-500 dark:hover:text-blue-300"
                                     >
                                         Edit
                                     </button>
                                     <button
                                         v-if="task.user.id === $page.props.auth.user.id"
                                         @click="deleteCard(task.id)"
-                                        class="text-xs text-red-600 hover:underline dark:text-red-400 dark:hover:text-red-300"
+                                        class="text-xs text-red-600 hover:underline dark:text-red-700 dark:hover:text-red-300"
                                     >
                                         Delete
                                     </button>
@@ -283,7 +283,7 @@ function closeCard(id: number) {
                                     <button
                                         v-if="task.status === 'Completed' && task.user.id === $page.props.auth.user.id"
                                         @click="closeCard(task.id)"
-                                        class="text-xs text-red-600 hover:underline dark:text-red-400 dark:hover:text-red-300"
+                                        class="text-xs text-red-600 hover:underline dark:text-red-600 dark:hover:text-red-300"
                                     >
                                         Close
                                     </button>
@@ -300,7 +300,7 @@ function closeCard(id: number) {
                 class="bg-opacity-50 fixed inset-0 z-50 flex items-center justify-center bg-black"
             >
                 <div
-                    class="w-full max-w-md rounded-xl bg-white p-6 shadow-lg dark:bg-gray-800 dark:text-white"
+                    class="w-full max-w-md rounded-xl bg-white p-6 shadow-lg dark:bg-[#1a1a1a] dark:text-white"
                 >
                     <h2 class="mb-4 text-lg font-semibold text-[#033A63] dark:text-gray-200">
                         {{ isEditing ? 'Edit Card' : 'Create New Board' }}
@@ -355,7 +355,7 @@ function closeCard(id: number) {
                         <button
                             @click="submitCard"
                             :disabled="!isFormValid"
-                            class="rounded bg-[#033A63] px-4 py-2 text-white disabled:cursor-not-allowed disabled:opacity-50 dark:bg-blue-600 dark:hover:bg-blue-500"
+                            class="rounded bg-[#033A63] px-4 py-2 text-white disabled:cursor-not-allowed disabled:opacity-50 dark:bg-gray-800 dark:hover:bg-gray-500"
                         >
                             {{ isEditing ? 'Update' : 'Save' }}
                         </button>

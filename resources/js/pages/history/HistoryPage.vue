@@ -10,7 +10,7 @@ const props = defineProps({
 <template>
     <Head title="History" />
     <AppLayout :breadcrumbs="[{ title: 'History', href: '/history' }]">
-        <div class="p-6 space-y-6 min-h-screen bg-[#f2f2f2]">
+        <div class="p-6 space-y-6 min-h-screen bg-[#f2f2f2] dark:bg-[#1a1a1a]">
             <h2 class="text-2xl font-bold">History</h2>
 
             <!-- Card List -->
@@ -18,13 +18,13 @@ const props = defineProps({
                 <div
                     v-for="card in cards"
                     :key="card.id"
-                    class="p-5 bg-white rounded-xl shadow-md border hover:shadow-lg transition hover:-translate-y-1"
+                    class="p-5 bg-white rounded-xl shadow-md border hover:shadow-lg transition hover:-translate-y-1 dark:bg-[#333333]"
                 >
                     <!-- Card Title -->
                     <h3 class="text-lg font-semibold mb-3">{{ card.title }}</h3>
 
                     <!-- Info Bar: Deadline & Closed At -->
-                    <div class="flex items-center justify-between text-sm text-gray-500 mb-4">
+                    <div class="flex items-center justify-between text-sm text-gray-500 mb-4 dark:text-gray-300">
                         <div class="flex items-center gap-1">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
