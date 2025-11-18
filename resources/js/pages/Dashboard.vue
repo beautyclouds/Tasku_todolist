@@ -90,18 +90,18 @@ onMounted(() => {
 <template>
     <Head title="Dashboard" />
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div class="min-h-screen bg-[#f2f2f2] dark:bg-[#1a1a1a]">
+        <div class="min-h-screen bg-[#f2f2f2] dark:bg-gray-800">
             <!-- Summary Cards -->
             <div class="grid grid-cols-1 gap-4 p-6 md:grid-cols-3">
-                <div class="rounded-xl bg-white p-6 text-center shadow dark:bg-[#333333] dark:text-white">
+                <div class="rounded-xl bg-white p-6 text-center shadow dark:bg-black dark:text-white">
                     <h3 class="mb-2 text-lg font-semibold text-[#113f67] dark:text-gray-200">Pending</h3>
                     <p class="text-3xl font-bold">{{ props.pendingCount }}</p>
                 </div>
-                <div class="rounded-xl bg-white p-6 text-center shadow dark:bg-[#333333] dark:text-white">
+                <div class="rounded-xl bg-white p-6 text-center shadow dark:bg-black dark:text-white">
                     <h3 class="mb-2 text-lg font-semibold text-[#113f67] dark:text-gray-200">In Progress</h3>
                     <p class="text-3xl font-bold">{{ props.inProgressCount }}</p>
                 </div>
-                <div class="rounded-xl bg-white p-6 text-center shadow dark:bg-[#333333] dark:text-white">
+                <div class="rounded-xl bg-white p-6 text-center shadow dark:bg-black dark:text-white">
                     <h3 class="mb-2 text-lg font-semibold text-[#113f67] dark:text-gray-200">Completed</h3>
                     <p class="text-3xl font-bold">{{ props.completedCount }}</p>
                 </div>
@@ -111,7 +111,7 @@ onMounted(() => {
                 <!-- LEFT -->
                 <div class="flex flex-col gap-6 lg:col-span-8">
                     <!-- Overview -->
-                    <div class="rounded-xl border-b bg-white p-6 shadow dark:bg-[#333333] dark:text-white">
+                    <div class="rounded-xl border-b bg-white p-6 shadow dark:bg-black dark:text-white">
                         <div class="mb-4 flex items-center justify-between">
                             <h3 class="text-lg font-semibold text-[#113f67] dark:text-gray-200">Overview</h3>
                             <a href="/board" class="text-sm text-blue-600 hover:underline dark:text-gray-200">See more</a>
@@ -166,7 +166,7 @@ onMounted(() => {
                             </template>
                         </div>
                     </div>
-                    <div class="bg-white p-11 rounded-2xl shadow mt-4 text-center dark:bg-[#333333]">
+                    <div class="bg-white p-11 rounded-2xl shadow mt-4 text-center dark:bg-black">
                         <h2 class="text-xl font-semibold text-gray-700 mb-2 dark:text-gray-300">💬 Today’s Motivation</h2>
                         <p class="text-md text-gray-500 italic dark:text-white">"{{ randomQuote }}"</p>
                     </div>
@@ -175,9 +175,9 @@ onMounted(() => {
                 <!-- RIGHT -->
                 <div class="flex flex-col gap-6 lg:col-span-4">
                     <!-- Calendar -->
-                    <div class="rounded-xl bg-white p-6 shadow dark:bg-[#333333] dark:text-white">
+                    <div class="rounded-xl bg-white p-6 shadow dark:bg-black dark:text-white">
                         <h3 class="text-md mb-4 font-bold text-[#113f67] dark:text-gray-200">Upcoming Tasks</h3>
-                        <div class="rounded-lg bg-gray-100 p-4">
+                        <div class="rounded-lg bg-gray-100 p-4 dark:bg-gray-500">
                             <div class="rounded-lg bg-gray-100 p-4 dark:bg-gray-800 dark:text-gray-200">
                                 <div class="mb-2 flex items-center justify-between">
                                     <button
@@ -239,7 +239,7 @@ onMounted(() => {
                         </div>
 
                         <!-- Today Schedule -->
-                        <div class="rounded-xl bg-white p-6 shadow dark:bg-[#333333] dark:text-white">
+                        <div class="rounded-xl bg-white p-6 shadow dark:bg-black dark:text-white">
                             <h3 class="text-md mb-4 font-bold text-[#113f67] dark:text-gray-200">Today’s Schedule</h3>
                             <ul class="space-y-2 text-sm text-gray-700 dark:text-gray-300">
                                 <li v-if="props.todayTasks.length === 0">✅ No tasks due today.</li>

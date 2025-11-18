@@ -11,11 +11,11 @@ const props = defineProps({
   <Head title="Detail History Card" />
   <AppLayout>
     <!-- Card Details -->
-    <div class="p-6 border rounded-xl shadow-md bg-white dark:bg-[#1a1a1a] space-y-3">
+    <div class="p-6 border rounded-xl shadow-md bg-white dark:bg-gray-800 space-y-3">
       <!-- 🔙 Tombol Kembali -->
       <a
         href="/history"
-        class="inline-flex items-center text-3xl font-extrabold text-[#033A63] transition hover:text-[#022d4d] dark:text-gray-200 dark:hover:text-blue-300"
+        class="inline-flex items-center text-3xl font-extrabold text-[#033A63] transition hover:text-[#022d4d] dark:text-gray-200 dark:hover:text-gray-300"
       >
         ←
       </a>
@@ -35,7 +35,7 @@ const props = defineProps({
       <!-- Owner -->
       <div class="mt-4">
         <strong class="mb-2 block">Owner:</strong>
-        <div class="inline-flex items-center gap-2 rounded-full bg-gray-100 px-3 py-1 dark:bg-gray-700">
+        <div class="inline-flex items-center gap-2 rounded-full bg-gray-100 px-3 py-1 dark:bg-black">
           <img
             :src="card.user?.photo ? card.user.photo : `https://ui-avatars.com/api/?name=${card.user?.name}`"
             :alt="card.user?.name"
@@ -54,7 +54,7 @@ const props = defineProps({
           <div
             v-for="member in card.collaborators"
             :key="member.id"
-            class="flex items-center gap-2 rounded-full bg-gray-100 px-3 py-1 dark:bg-gray-700"
+            class="flex items-center gap-2 rounded-full bg-gray-100 px-3 py-1 dark:bg-black"
           >
             <img
               :src="member.photo ? member.photo : `https://ui-avatars.com/api/?name=${member.name}`"
@@ -74,7 +74,7 @@ const props = defineProps({
           <div
             v-for="task in card.tasks"
             :key="task.id"
-            class="flex items-start space-x-2 bg-gray-50 dark:bg-[#333333] p-2 rounded-lg"
+            class="flex items-start space-x-2 bg-gray-50 dark:bg-black p-2 rounded-lg"
           >
             <input type="checkbox" checked disabled class="mt-1" />
             <div>

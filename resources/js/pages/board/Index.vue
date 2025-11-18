@@ -158,7 +158,7 @@ function closeCard(id: number) {
 <template>
     <Head title="Board" />
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div class="flex min-h-screen flex-col gap-4 bg-[#f2f2f2] p-6 dark:bg-[#1a1a1a]">
+        <div class="flex min-h-screen flex-col gap-4 bg-[#f2f2f2] p-6 dark:bg-gray-800">
             <!-- Bagian Search + Tombol -->
             <div class="flex items-center justify-between">
                 <div class="flex w-full max-w-xl items-center gap-2">
@@ -166,20 +166,20 @@ function closeCard(id: number) {
                         v-model="search"
                         type="text"
                         placeholder="Search task"
-                        class="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 shadow-sm dark:border-gray-600 dark:bg-[#333333] dark:text-white dark:placeholder-gray-400"
+                        class="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 shadow-sm dark:border-gray-800 dark:bg-black dark:text-white dark:placeholder-gray-100"
                     />
                     <!-- ✅ tombol reset -->
                     <button
                         v-if="search"
                         @click="resetSearch"
-                        class="rounded bg-gray-400 px-4 py-2 text-white shadow-sm hover:bg-gray-400 dark:bg-gray-600 dark:text-white dark:hover:bg-gray-500"
+                        class="rounded bg-gray-400 px-4 py-2 text-white shadow-sm hover:bg-gray-400 dark:bg-gray-700 dark:text-white dark:hover:bg-gray-500"
                     >
                         Reset
                     </button>
                 </div>
                 <button
                     @click="openCreateModal"
-                    class="ml-4 rounded-xl bg-[#033A63] px-6 py-2 text-white shadow-md dark:bg-gray-700 dark:hover:bg-blue-500"
+                    class="ml-4 rounded-xl bg-[#033A63] px-6 py-2 text-white shadow-md dark:bg-black dark:hover:bg-blue-500"
                 >
                     + Create New
                 </button>
@@ -189,14 +189,14 @@ function closeCard(id: number) {
             <div class="grid grid-cols-1 gap-6 md:grid-cols-4">
                 <template
                     v-for="(section, index) in [
-                        { label: '🟤 Pending (My Boards)', items: pendingTasks, color: 'text-gray-700', bg: 'bg-orange-100 dark:bg-orange-300/30' },
-                        { label: '🟡 In Progress (My Boards)', items: onProgressTasks, color: 'text-yellow-600', bg: 'bg-yellow-100 dark:bg-yellow-300/30' },
-                        { label: '🟢 Completed (My Boards)', items: completedTasks, color: 'text-green-600', bg: 'bg-green-100 dark:bg-green-300/30' },
-                        { label: '🔵 Collaboration', items: props.collaborationBoards, color: 'text-blue-600', bg: 'bg-blue-100 dark:bg-blue-300/30' },
+                        { label: '🟤 Pending (My Boards)', items: pendingTasks, color: 'text-gray-700', bg: 'bg-orange-100 dark:bg-orange-200/30' },
+                        { label: '🟡 In Progress (My Boards)', items: onProgressTasks, color: 'text-yellow-600', bg: 'bg-yellow-100 dark:bg-yellow-200/30' },
+                        { label: '🟢 Completed (My Boards)', items: completedTasks, color: 'text-green-600', bg: 'bg-green-100 dark:bg-green-200/30' },
+                        { label: '🔵 Collaboration', items: props.collaborationBoards, color: 'text-blue-600', bg: 'bg-blue-100 dark:bg-blue-200/30' },
                     ]"
                     :key="index"
                 >
-                    <div class="h-fit rounded-xl bg-white p-4 shadow-md dark:bg-[#333333] dark:text-white">
+                    <div class="h-fit rounded-xl bg-white p-4 shadow-md dark:bg-black dark:text-white">
                         <div class="mb-4 flex items-center justify-between">
                             <span class="text-sm font-semibold" :class="[section.color, 'dark:text-gray-200']">{{ section.label }}</span>
                             <button class="text-xl font-bold text-gray-500 dark:text-gray-400">⋯</button>

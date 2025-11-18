@@ -10,7 +10,7 @@ const props = defineProps({
 <template>
     <Head title="History" />
     <AppLayout :breadcrumbs="[{ title: 'History', href: '/history' }]">
-        <div class="p-6 space-y-6 min-h-screen bg-[#f2f2f2] dark:bg-[#1a1a1a]">
+        <div class="p-6 space-y-6 min-h-screen bg-[#f2f2f2] dark:bg-gray-800">
             <h2 class="text-2xl font-bold">History</h2>
 
             <!-- Card List -->
@@ -18,7 +18,7 @@ const props = defineProps({
                 <div
                     v-for="card in cards"
                     :key="card.id"
-                    class="p-5 bg-white rounded-xl shadow-md border hover:shadow-lg transition hover:-translate-y-1 dark:bg-[#333333]"
+                    class="p-5 bg-white rounded-xl shadow-md border hover:shadow-lg transition hover:-translate-y-1 dark:bg-black"
                 >
                     <!-- Card Title -->
                     <h3 class="text-lg font-semibold mb-3">{{ card.title }}</h3>
@@ -48,7 +48,7 @@ const props = defineProps({
                                 :key="member.id"
                                 :src="member.photo ? member.photo : `https://ui-avatars.com/api/?name=${member.name}`"
                                 :alt="member.name"
-                                class="h-6 w-6 rounded-full border-2 border-white shadow object-cover dark:border-gray-700"
+                                class="h-6 w-6 rounded-full border-2 border-white shadow object-cover dark:border-gray-600"
                             />
                         </div>
                     </div>
