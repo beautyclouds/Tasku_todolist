@@ -120,11 +120,11 @@ const closeMenu = () => {
 <template>
     <Head title="Card Detail" />
     <AppLayout>
-        <div class="p-6 border rounded-xl shadow-md bg-white dark:bg-[#1a1a1a] space-y-3">
+        <div class="p-6 border rounded-xl shadow-md bg-white dark:bg-gray-800 space-y-3">
             <!-- 🔙 Tombol Kembali -->
             <a
                 href="/board"
-                class="inline-flex items-center text-3xl font-extrabold text-[#033A63] transition hover:text-[#022d4d] dark:text-gray-200 dark:hover:text-blue-300"
+                class="inline-flex items-center text-3xl font-extrabold text-[#033A63] transition hover:text-[#022d4d] dark:text-gray-200 dark:hover:text-gray-200"
             >
                 ←
             </a>
@@ -156,12 +156,12 @@ const closeMenu = () => {
                 <div class="flex flex-wrap items-center gap-2">
                     <!-- Owner -->
                     <div
-                        class="flex items-center gap-2 rounded-full bg-gray-100 px-2 py-1 dark:bg-gray-700"
+                        class="flex items-center gap-2 rounded-full bg-gray-100 px-2 py-1 dark:bg-black"
                     >
                         <img
                             :src="`https://ui-avatars.com/api/?name=${props.card.user.name}`"
                             :alt="props.card.user.name"
-                            class="h-8 w-8 rounded-full border-2 border-white shadow dark:border-gray-700"
+                            class="h-8 w-8 rounded-full border-2 border-white shadow dark:border-black"
                         />
                         <span class="text-sm font-medium dark:text-gray-200">
                             {{ props.card.user.name }} (Owner)
@@ -172,7 +172,7 @@ const closeMenu = () => {
                     <div
                         v-for="collaborator in props.card.collaborators"
                         :key="collaborator.id"
-                        class="flex items-center gap-2 rounded-full bg-gray-100 px-2 py-1 dark:bg-gray-700 relative"
+                        class="flex items-center gap-2 rounded-full bg-gray-100 px-2 py-1 dark:bg-black relative"
                     >
                         <img
                             :src="
@@ -181,7 +181,7 @@ const closeMenu = () => {
                                 : `https://ui-avatars.com/api/?name=${collaborator.name}`
                             "
                             :alt="collaborator.name"
-                            class="h-8 w-8 rounded-full border-2 border-white shadow dark:border-gray-700"
+                            class="h-8 w-8 rounded-full border-2 border-white shadow dark:border-black"
                         />
                         <span class="text-sm font-medium dark:text-gray-200">
                             {{ collaborator.name }}
@@ -237,7 +237,7 @@ const closeMenu = () => {
                 <form @submit.prevent="inviteMember" class="flex items-center gap-2">
                     <select
                         v-model="inviteForm.email"
-                        class="flex-1 rounded border px-3 py-2 dark:border-gray-500 dark:bg-gray-600 dark:text-white"
+                        class="flex-1 rounded border px-3 py-2 dark:border-gray-800 dark:bg-black dark:text-white"
                     >
                         <option value="" disabled>Select a user...</option>
                         <option
@@ -263,7 +263,11 @@ const closeMenu = () => {
             <div>
                 <h2 class="mb-2 font-semibold dark:text-gray-200">📌 Sub Tasks:</h2>
                 <ul class="mb-4 space-y-2 text-gray-800 dark:text-gray-200">
-                    <li v-for="task in props.card.tasks" :key="task.id" class="flex flex-col gap-1">
+                    <li
+                        v-for="task in props.card.tasks"
+                        :key="task.id"
+                        class="flex flex-col gap-2 rounded-xl border border-gray-300 bg-gray-50 px-3 py-3 shadow-sm dark:border-gray-700 dark:bg-black"
+                    >
                         <div class="flex items-center gap-2">
                             <input
                                 type="checkbox"
@@ -280,7 +284,6 @@ const closeMenu = () => {
                             </span>
                         </div>
 
-                        <!-- 🔹 Deskripsi subtask -->
                         <p
                             v-if="task.description"
                             class="ml-6 text-sm text-gray-500 dark:text-gray-400"
@@ -288,14 +291,11 @@ const closeMenu = () => {
                             {{ task.description }}
                         </p>
 
-                        <!-- 🔹 Info riwayat terakhir -->
                         <p
                             v-if="props.card.collaborators && props.card.collaborators.length > 0 && task.histories && task.histories.length"
                             class="ml-6 text-xs italic text-gray-600 dark:text-gray-400"
                         >
-                            ({{ task.histories[0].user.name }}
-                            {{ task.histories[0].action }}
-                            pada
+                            ({{ task.histories[0].user.name }} {{ task.histories[0].action }} pada
                             {{ new Date(task.histories[0].created_at).toLocaleString() }})
                         </p>
                     </li>
@@ -308,12 +308,12 @@ const closeMenu = () => {
                         v-model="form.name"
                         type="text"
                         placeholder="Add new task..."
-                        class="flex-1 rounded border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-[#033A63] focus:outline-none dark:border-gray-500 dark:bg-gray-600 dark:text-white dark:focus:ring-blue-500"
+                        class="flex-1 rounded border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-[#033A63] focus:outline-none dark:border-gray-500 dark:bg-gray-900 dark:text-white dark:focus:ring-blue-500"
                     />
                     <textarea
                         v-model="form.description"
                         placeholder="Add description (optional)"
-                        class="flex-1 rounded border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-[#033A63] focus:outline-none dark:border-gray-500 dark:bg-gray-600 dark:text-white dark:focus:ring-blue-500"
+                        class="flex-1 rounded border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-[#033A63] focus:outline-none dark:border-gray-500 dark:bg-gray-900 dark:text-white dark:focus:ring-blue-500"
                     ></textarea>
                     <button
                         class="w-[100px] rounded bg-[#033A63] py-1.5 text-l text-white transition hover:bg-[#022d4d] dark:bg-[#033A63] dark:hover:bg-gray-500"
