@@ -6,6 +6,7 @@ use App\Http\Controllers\BordController;
 use App\Http\Controllers\MemberController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\HistoryController;
+use App\Http\Controllers\SubTaskController;
 
 Route::get('/', function () {
     return Inertia::render('Welcome');
@@ -40,6 +41,9 @@ Route::delete('/member/{id}', [MemberController::class, 'destroy'])->name('membe
 // History
 Route::get('/history', [HistoryController::class, 'index'])->name('history.index');
 Route::get('/history/{id}', [HistoryController::class, 'show'])->name('history.show');
+
+//Detail Subtask
+Route::get('/subtask/{id}', [SubTaskController::class, 'show'])->name('subtask.show');
 
 
 require __DIR__.'/settings.php';

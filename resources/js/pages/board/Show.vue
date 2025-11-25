@@ -115,6 +115,11 @@ const openMenu = (id: number) => {
 const closeMenu = () => {
     activeMenu.value = null;
 };
+
+//Menuju halaman detail subtask
+const goToSubTask = (id: number) => {
+    router.get(`/subtask/${id}`);
+};
 </script>
 
 <template>
@@ -276,9 +281,17 @@ const closeMenu = () => {
                                 class="h-4 w-4 accent-[#033A63] dark:accent-blue-500"
                             />
                             <span
-                                :class="{
-                                    'text-gray-500 line-through dark:text-gray-400': task.is_done,
-                                }"
+                                v-if="props.card.collaborators && props.card.collaborators.length > 0"
+                                @click="goToSubTask(task.id)"
+                                class="cursor-pointer text-blue-800 hover:underline dark:text-blue-400"
+                            >
+                                {{ task.name }}
+                            </span>
+
+                            <!-- ❌ Tidak bisa diklik jika tidak ada collaborator -->
+                            <span
+                                v-else
+                                class="text-gray-600 cursor-not-allowed dark:text-gray-500"
                             >
                                 {{ task.name }}
                             </span>
