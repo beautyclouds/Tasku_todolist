@@ -44,6 +44,8 @@ Route::get('/history/{id}', [HistoryController::class, 'show'])->name('history.s
 
 //Detail Subtask
 Route::get('/subtask/{id}', [SubTaskController::class, 'show'])->name('subtask.show');
+Route::put('/subtask/{id}', [SubTaskController::class, 'update'])->name('subtask.update'); //update judal dan deskripsi subtask
+
 
 
 require __DIR__.'/settings.php';
