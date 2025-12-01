@@ -9,7 +9,7 @@ use App\Models\User;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Auth;
 
-class BordController extends Controller
+class BoardController extends Controller
 {
     /**
      * Menampilkan daftar board pribadi dan kolaborasi user yang sedang login.

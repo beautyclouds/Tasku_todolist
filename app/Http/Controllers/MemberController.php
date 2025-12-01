@@ -5,16 +5,19 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
+use Illuminate\Support\Facades\Auth; 
 
 class MemberController extends Controller
 {
     public function index(Request $request)
     {
+        $currentUserId = Auth::id();
+
         // Ambil input pencarian dari query string (?search=)
         $search = $request->query('search');
 
         // Ambil semua user kecuali yang sedang login, dan filter jika ada pencarian
-        $users = User::where('id', '!=', auth()->id())
+        $users = User::where('id', '!=', $currentUserId)
             ->when($search, function ($query, $search) {
                 $query->where(function ($q) use ($search) {
                     $q->where('name', 'like', "%{$search}%")
