@@ -300,7 +300,7 @@ function closeCard(id: number) {
                 class="bg-opacity-50 fixed inset-0 z-50 flex items-center justify-center bg-black"
             >
                 <div
-                    class="w-full max-w-md rounded-xl bg-white p-6 shadow-lg dark:bg-[#1a1a1a] dark:text-white"
+                    class="w-full max-w-md rounded-xl bg-white p-6 shadow-lg dark:bg-gray-800 dark:text-white"
                 >
                     <h2 class="mb-4 text-lg font-semibold text-[#033A63] dark:text-gray-200">
                         {{ isEditing ? 'Edit Card' : 'Create New Board' }}
@@ -355,7 +355,7 @@ function closeCard(id: number) {
                         <button
                             @click="submitCard"
                             :disabled="!isFormValid"
-                            class="rounded bg-[#033A63] px-4 py-2 text-white disabled:cursor-not-allowed disabled:opacity-50 dark:bg-gray-800 dark:hover:bg-gray-500"
+                            class="rounded bg-[#033A63] px-4 py-2 text-white disabled:cursor-not-allowed disabled:opacity-50 dark:bg-gray-700 dark:hover:bg-gray-500"
                         >
                             {{ isEditing ? 'Update' : 'Save' }}
                         </button>
