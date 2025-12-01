@@ -7,6 +7,8 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Auth;
+use App\Models\SubTask;
+use App\Models\SubtaskHistory;
 
 class DashboardController extends Controller
 {
@@ -93,6 +95,42 @@ class DashboardController extends Controller
             'recentUsers' => $recentUsers,
             'deadlines' => $deadlines,
             'todayTasks' => $todayTasks,
+        ]);
+    }
+
+    public function toggleSubtaskIsDone(Request $request, SubTask $subtask)
+    {
+        // 1. Validasi request dari Vue
+        $request->validate([
+            'is_done' => ['required', 'boolean'],
+            // Comment WAJIB diisi jika kita mau checklist (is_done = true)
+            'comment' => ['required_if:is_done,true', 'nullable', 'string', 'min:5', 'max:500'], 
+        ]);
+        
+        $newStatus = $request->is_done;
+        
+        // Cek apakah statusnya memang berubah dari yang sekarang di database
+        if ($subtask->is_done === $newStatus) {
+            return response()->json(['message' => 'Status is already set.'], 200);
+        }
+        
+        // 2. Update status subtask
+        $subtask->update(['is_done' => $newStatus]);
+
+        // 3. Catat History (termasuk komen)
+        $actionType = $newStatus ? 'checked' : 'unchecked';
+        $commentToStore = $newStatus ? $request->comment : null;
+
+        SubtaskHistory::create([ 
+            'subtask_id' => $subtask->id,
+            'user_id' => Auth::id(), // ID user yang sedang login
+            'action' => $actionType,
+            'comment' => $commentToStore, // Simpan Komen dari Request
+        ]);
+
+        return response()->json([
+            'message' => 'Subtask status updated and progress recorded successfully.',
+            'subtask' => $subtask->refresh()->load('histories.user'), // Load histories terbaru
         ]);
     }
 }
