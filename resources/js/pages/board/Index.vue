@@ -355,7 +355,7 @@ function closeCard(id: number) {
                         <button
                             @click="submitCard"
                             :disabled="!isFormValid"
-                            class="rounded bg-[#033A63] px-4 py-2 text-white disabled:cursor-not-allowed disabled:opacity-50 dark:bg-gray-700 dark:hover:bg-gray-500"
+                            class="rounded bg-[#033A63] px-4 py-2 text-white disabled:cursor-not-allowed disabled:opacity-50 dark:bg-gray-00 dark:hover:bg-gray-500"
                         >
                             {{ isEditing ? 'Update' : 'Save' }}
                         </button>

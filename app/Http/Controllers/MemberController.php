@@ -6,17 +6,20 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use App\Models\BoardCard;
 use Inertia\Inertia;
+use Illuminate\Support\Facades\Auth; 
 
 class MemberController extends Controller
 {
     public function index(Request $request)
     {
+        $currentUserId = Auth::id();
+
+        // Ambil input pencarian dari query string (?search=)
         $search = $request->query('search');
 
-        $auth = auth()->user();
-
-        $users = User::where('id', '!=', $auth->id)
-            ->when($search, function ($query, $search) {
+        // Ambil semua user kecuali yang sedang login, dan filter jika ada pencarian
+        $users = User::where('id', '!=', $currentUserId)
+        ->when($search, function ($query, $search) {
                 $query->where(function ($q) use ($search) {
                     $q->where('name', 'like', "%{$search}%")
                       ->orWhere('email', 'like', "%{$search}%");
@@ -73,5 +76,13 @@ class MemberController extends Controller
                 'search' => $search,
             ],
         ]);
+    }
+
+    public function destroy($id)
+    {
+        $user = User::findOrFail($id);
+        $user->delete();
+
+        return redirect()->route('member.index')->with('success', 'User berhasil dihapus');
     }
 }
