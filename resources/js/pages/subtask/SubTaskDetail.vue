@@ -1,25 +1,56 @@
 <script setup lang="ts">
 import AppLayout from '@/layouts/AppLayout.vue';
-import { Head, router } from '@inertiajs/vue3';
-import { defineProps, ref } from 'vue';
+import { Head, router, usePage } from '@inertiajs/vue3';
+import { defineProps, ref, onMounted } from 'vue';
+import axios from 'axios';
 
+// ============================
+// DEFINISI PROPS
+// ============================
 const props = defineProps<{
     subtask: any;
     card: any;
     collaborators: any[];
+    comments: any[];
 }>();
 
-// 🔙 Kembali ke halaman detail card
+// ============================
+// TIPE DATA COMMENT
+// ============================
+interface CommentUser {
+    id: number;
+    name: string;
+    avatar?: string | null;
+}
+
+interface CommentType {
+    id: number;
+    user_id: number;
+    user: CommentUser;
+    message: string | null;
+    file_path?: string | null;
+    created_at: string;
+}
+
+// ============================
+// USER LOGIN
+// ============================
+const user = usePage().props.auth.user as CommentUser;
+
+// ============================
+// BACK BUTTON
+// ============================
 const goBack = () => {
     router.visit(`/board/${props.card.id}`);
 };
 
-// 📝 Mode Edit
+// ============================
+// EDIT SUBTASK
+// ============================
 const isEditing = ref(false);
 const editedName = ref(props.subtask.name);
 const editedDescription = ref(props.subtask.description);
 
-// 💾 Simpan perubahan
 const saveEdit = () => {
     router.put(
         `/subtask/${props.subtask.id}`,
@@ -28,14 +59,14 @@ const saveEdit = () => {
             description: editedDescription.value,
         },
         {
-            onSuccess: () => {
-                isEditing.value = false; // keluar dari mode edit
-            },
-        },
+            onSuccess: () => (isEditing.value = false),
+        }
     );
 };
 
-// ⏳ Format tanggal
+// ============================
+// FORMAT DATE DETAIL
+// ============================
 const formatDate = (dateStr: string) => {
     const date = new Date(dateStr);
     return date.toLocaleString('id-ID', {
@@ -46,7 +77,63 @@ const formatDate = (dateStr: string) => {
         minute: '2-digit',
     });
 };
+
+// ============================
+// COMMENT SYSTEM
+// ============================
+const comments = ref<CommentType[]>(props.comments ?? []);
+const newMessage = ref("");
+
+// Ambil komentar
+const fetchComments = async () => {
+    const res = await axios.get(`/subtasks/${props.subtask.id}/comments`);
+    comments.value = res.data.comments;
+};
+
+// Kirim komentar
+const sendComment = async () => {
+    if (!newMessage.value.trim()) return;
+
+    await axios.post(`/subtasks/${props.subtask.id}/comments`, {
+        type: "text",
+        message: newMessage.value,
+    });
+
+    newMessage.value = "";
+    fetchComments();
+};
+
+// Format tanggal label (Today / Yesterday)
+const formatDateLabel = (dateStr: string) => {
+    const date = new Date(dateStr);
+    const now = new Date();
+    const diffDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
+
+    if (diffDays === 0) return "Today";
+    if (diffDays === 1) return "Yesterday";
+
+    return date.toLocaleDateString("en-US", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+    });
+};
+
+// Menentukan apakah label tanggal muncul
+const shouldShowDateLabel = (index: number) => {
+    if (index === 0) return true;
+
+    const current = new Date(comments.value[index].created_at).toDateString();
+    const previous = new Date(comments.value[index - 1].created_at).toDateString();
+
+    return current !== previous;
+};
+
+onMounted(() => {
+    fetchComments();
+});
 </script>
+
 
 <template>
     <Head title="Subtask Detail" />
@@ -170,6 +257,66 @@ const formatDate = (dateStr: string) => {
                 <p v-if="!props.collaborators || props.collaborators.length === 0" class="mt-2 text-sm text-gray-500 dark:text-gray-400">
                     Tidak ada collaborator.
                 </p>
+            </div>
+
+            <!-- 💬 KOMENTAR SUBTASK -->
+            <div class="mt-12">
+                <h2 class="flex justify-center mb-5 text-lg font-semibold text-[#033A63] dark:text-gray-100">
+                    💬 Komentar
+                </h2>
+
+                <!-- LIST KOMENTAR -->
+                <div class="space-y-6 p-2">
+
+                    <!-- Tambahan space rapi di atas komentar -->
+                    <div class="h-2"></div>
+
+                    <div
+                        v-for="(comment, index) in comments"
+                        :key="comment.id"
+                        class="flex flex-col gap-1"
+                    >
+                        <!-- Label tanggal -->
+                        <div
+                            v-if="shouldShowDateLabel(index)"
+                            class="text-center text-gray-500 text-xs my-3"
+                        >
+                            {{ formatDateLabel(comment.created_at) }}
+                        </div>
+
+                        <!-- Bubble chat -->
+                        <div
+                            :class="[ 
+                                'max-w-xs px-4 py-3 rounded-xl shadow-md leading-relaxed',
+                                comment.user_id === user.id
+                                    ? 'bg-blue-600 text-white self-end'
+                                    : 'bg-gray-200 text-gray-800 self-start'
+                            ]"
+                        >
+                            {{ comment.message }}
+                        </div>
+
+                        <!-- Space tambahan setelah bubble -->
+                        <div class="h-1"></div>
+                    </div>
+                </div>
+
+                <!-- INPUT -->
+                <div class="flex items-center gap-2 mt-6">
+                    <input
+                        v-model="newMessage"
+                        type="text"
+                        class="flex-1 rounded-lg border px-3 py-2 dark:bg-black dark:text-white"
+                        placeholder="Tulis komentar..."
+                    />
+
+                    <button
+                        @click="sendComment"
+                        class="rounded-lg bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
+                    >
+                        Send
+                    </button>
+                </div>
             </div>
         </div>
     </AppLayout>

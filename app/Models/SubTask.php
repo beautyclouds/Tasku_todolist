@@ -25,4 +25,10 @@ class SubTask extends Model
         return $this->hasMany(\App\Models\SubtaskHistory::class, 'subtask_id');
     }
 
+    public function comments()
+    {
+        return $this->hasMany(Comment::class, 'subtask_id');  // 🔥 tambahkan FK yang benar
+    }
+
+
 }

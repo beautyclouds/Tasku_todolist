@@ -9,10 +9,10 @@ class SubTaskController extends Controller
 {
     public function show($id)
     {
-        // 🟢 Load card + user (owner) + collaborators
         $subtask = SubTask::with([
-            'card.user',          // load owner
-            'card.collaborators'  // load collaborators
+            'card.user',
+            'card.collaborators',
+            'comments.user', // 🔥 Tambahin ini untuk load komentar
         ])->findOrFail($id);
 
         $card = $subtask->card;
@@ -20,7 +20,8 @@ class SubTaskController extends Controller
         return inertia('subtask/SubTaskDetail', [
             'subtask' => $subtask,
             'card' => $card,
-            'collaborators' => $card->collaborators, // sudah otomatis ke-load
+            'collaborators' => $card->collaborators,
+            'comments' => $subtask->comments,   // 🔥 WAJIB ADA!
         ]);
     }
 

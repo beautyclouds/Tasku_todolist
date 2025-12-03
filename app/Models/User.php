@@ -72,4 +72,8 @@ class User extends Authenticatable
         return ($activeCollab || $activeOwner) ? 'Aktif' : 'Tidak Aktif';
     }
 
+    public function comments()
+    {
+        return $this->hasMany(Comment::class);
+    }
 }

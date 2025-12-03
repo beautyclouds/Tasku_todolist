@@ -7,6 +7,7 @@ use App\Http\Controllers\MemberController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\HistoryController;
 use App\Http\Controllers\SubTaskController;
+use App\Http\Controllers\CommentController;
 
 Route::get('/', function () {
     return Inertia::render('Welcome');
@@ -48,7 +49,11 @@ Route::get('/history/{id}', [HistoryController::class, 'show'])->name('history.s
 Route::get('/subtask/{id}', [SubTaskController::class, 'show'])->name('subtask.show');
 Route::put('/subtask/{id}', [SubTaskController::class, 'update'])->name('subtask.update'); //update judal dan deskripsi subtask
 
-
+Route::middleware(['auth', 'verified'])->group(function () {
+    // Comments API
+    Route::get('/subtasks/{id}/comments', [CommentController::class, 'index']);
+    Route::post('/subtasks/{id}/comments', [CommentController::class, 'store']);
+});
 
 require __DIR__.'/settings.php';
 require __DIR__.'/auth.php';
