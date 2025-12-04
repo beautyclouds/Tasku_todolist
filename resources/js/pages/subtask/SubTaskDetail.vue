@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import AppLayout from '@/layouts/AppLayout.vue';
 import { Head, router, usePage } from '@inertiajs/vue3';
-import { defineProps, ref, onMounted } from 'vue';
+import { defineProps, ref, onMounted, onUnmounted } from 'vue';
 import axios from 'axios';
 
 // ============================
@@ -79,6 +79,15 @@ const formatDate = (dateStr: string) => {
 };
 
 // ============================
+// NORMALISASI TANGGAL (FIX TIMEZONE)
+// ============================
+const normalizeDate = (str: string) => {
+    const d = new Date(str); // dari server (UTC)
+    d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); // ubah ke WIB
+    return d;
+};
+
+// ============================
 // COMMENT SYSTEM
 // ============================
 const comments = ref<CommentType[]>(props.comments ?? []);
@@ -103,14 +112,20 @@ const sendComment = async () => {
     fetchComments();
 };
 
-// Format tanggal label (Today / Yesterday)
+// ============================
+// FORMAT LABEL TANGGAL (Today / Yesterday)
+// ============================
 const formatDateLabel = (dateStr: string) => {
-    const date = new Date(dateStr);
-    const now = new Date();
-    const diffDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
+    const date = normalizeDate(dateStr);
+    const now = normalizeDate(new Date().toISOString());
 
-    if (diffDays === 0) return "Today";
-    if (diffDays === 1) return "Yesterday";
+    const today = now.toDateString();
+
+    const yesterday = new Date(now);
+    yesterday.setDate(now.getDate() - 1);
+
+    if (date.toDateString() === today) return "Today";
+    if (date.toDateString() === yesterday.toDateString()) return "Yesterday";
 
     return date.toLocaleDateString("en-US", {
         day: "2-digit",
@@ -119,19 +134,66 @@ const formatDateLabel = (dateStr: string) => {
     });
 };
 
-// Menentukan apakah label tanggal muncul
+// ============================
+// SHOW LABEL JIKA BERBEDA HARI
+// ============================
 const shouldShowDateLabel = (index: number) => {
     if (index === 0) return true;
 
-    const current = new Date(comments.value[index].created_at).toDateString();
-    const previous = new Date(comments.value[index - 1].created_at).toDateString();
+    const current = normalizeDate(comments.value[index].created_at).toDateString();
+    const previous = normalizeDate(comments.value[index - 1].created_at).toDateString();
 
     return current !== previous;
 };
 
+// ============================
+// ON MOUNT
+// ============================
 onMounted(() => {
     fetchComments();
 });
+
+// FORMAT JAM (HH:MM)
+const formatTime = (dateStr: string) => {
+    const date = new Date(dateStr);
+    return date.toLocaleTimeString('id-ID', {
+        hour: '2-digit',
+        minute: '2-digit',
+    });
+};
+
+// ============================
+// SCROLL CONTROL COMMENT SECTION
+// ============================
+
+const isCommentSticky = ref(false);
+const commentHeaderRef = ref<HTMLElement | null>(null);
+const commentContainerRef = ref<HTMLElement | null>(null);
+
+onMounted(() => {
+    const onScroll = () => {
+        const headerEl = commentHeaderRef.value;
+        const containerEl = commentContainerRef.value;
+        if (!headerEl || !containerEl) return;
+
+        const rect = headerEl.getBoundingClientRect();
+        const topbarHeight = 70; // tinggi topbar
+
+        if (rect.top <= topbarHeight) {
+            isCommentSticky.value = true;
+            // atur tinggi container chat agar scrollable di bawah header
+            containerEl.style.maxHeight = `${window.innerHeight - topbarHeight - headerEl.offsetHeight - 20}px`;
+        } else {
+            isCommentSticky.value = false;
+            containerEl.style.maxHeight = 'none';
+        }
+    };
+
+    window.addEventListener('scroll', onScroll);
+    onUnmounted(() => window.removeEventListener('scroll', onScroll));
+});
+
+
 </script>
 
 
@@ -260,17 +322,24 @@ onMounted(() => {
             </div>
 
             <!-- 💬 KOMENTAR SUBTASK -->
-            <div class="mt-12">
-                <h2 class="flex justify-center mb-5 text-lg font-semibold text-[#033A63] dark:text-gray-100">
+            <div class="mt-12 relative">
+                <!-- HEADER KOMENTAR -->
+                <h2
+                    ref="commentHeaderRef"
+                    class="flex justify-center text-lg font-semibold text-[#033A63] dark:text-gray-100 sticky z-10 bg-white dark:bg-gray-800 py-2 border-b"
+                    :style="{ top: isCommentSticky ? '70px' : 'auto' }"
+                >
                     💬 Komentar
                 </h2>
 
                 <!-- LIST KOMENTAR -->
-                <div class="space-y-6 p-2">
+                <div
+                    ref="commentContainerRef"
+                    class="space-y-2 p-2 overflow-y-auto transition-all duration-200"
+                >
 
                     <!-- Tambahan space rapi di atas komentar -->
                     <div class="h-2"></div>
-
                     <div
                         v-for="(comment, index) in comments"
                         :key="comment.id"
@@ -279,30 +348,67 @@ onMounted(() => {
                         <!-- Label tanggal -->
                         <div
                             v-if="shouldShowDateLabel(index)"
-                            class="text-center text-gray-500 text-xs my-3"
+                            class="text-center text-gray-800 text-xs my-3"
                         >
                             {{ formatDateLabel(comment.created_at) }}
                         </div>
 
-                        <!-- Bubble chat -->
+                        <!-- Chat row -->
                         <div
-                            :class="[ 
-                                'max-w-xs px-4 py-3 rounded-xl shadow-md leading-relaxed',
-                                comment.user_id === user.id
-                                    ? 'bg-blue-600 text-white self-end'
-                                    : 'bg-gray-200 text-gray-800 self-start'
-                            ]"
+                            class="flex gap-2"
+                            :class="comment.user_id === user.id ? 'justify-end' : 'justify-start'"
                         >
-                            {{ comment.message }}
+                            <!-- Avatar hanya untuk orang lain -->
+                            <img
+                                v-if="comment.user_id !== user.id"
+                                :src="comment.user.avatar
+                                    ? `/storage/${comment.user.avatar}`
+                                    : `https://ui-avatars.com/api/?name=${comment.user.name}`"
+                                class="h-8 w-8 rounded-full shadow border"
+                            />
+
+                            <!-- Chat Column -->
+                            <div class="flex flex-col max-w-[70%]">
+                                <!-- Nama pengirim (hanya untuk orang lain) -->
+                                <span
+                                    v-if="comment.user_id !== user.id"
+                                    class="text-[11px] font-semibold mb-1 text-left text-gray-700"
+                                >
+                                    {{ comment.user.name }}
+                                </span>
+
+                                <!-- Bubble dengan timestamp di dalam -->
+                                <div
+                                    :class="[
+                                        'relative px-2 pr-5 pb-4 py-2 rounded-xl shadow-md leading-relaxed w-fit',
+                                        comment.user_id === user.id
+                                            ? 'bg-[#055A99] text-white self-end'
+                                            : 'bg-gray-200 text-gray-800 self-start'
+                                    ]"
+                                >
+                                    {{ comment.message }}
+
+                                    <!-- TIMESTAMP DI DALAM BUBBLE -->
+                                    <span
+                                        class="absolute bottom-1 right-2 text-[9px]"
+                                        :class="comment.user_id === user.id ? 'text-gray-200' : 'text-gray-600'"
+                                    >
+                                        {{ formatTime(comment.created_at) }}
+                                    </span>
+                                </div>
+                            </div>
                         </div>
 
-                        <!-- Space tambahan setelah bubble -->
+                        <!-- Small spacing after each bubble -->
                         <div class="h-1"></div>
                     </div>
                 </div>
 
                 <!-- INPUT -->
-                <div class="flex items-center gap-2 mt-6">
+                <div
+                    class="flex items-center gap-2 mt-4 pt-3 border-t"
+                    :class="isCommentSticky ? 'sticky bottom-0 bg-white dark:bg-gray-800 z-10' : ''"
+                >
                     <input
                         v-model="newMessage"
                         type="text"
@@ -312,7 +418,7 @@ onMounted(() => {
 
                     <button
                         @click="sendComment"
-                        class="rounded-lg bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
+                        class="rounded-lg bg-[#033A63] px-4 py-2 text-white hover:bg-[#055A99]"
                     >
                         Send
                     </button>
