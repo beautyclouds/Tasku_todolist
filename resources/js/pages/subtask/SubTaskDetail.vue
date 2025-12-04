@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import AppLayout from '@/layouts/AppLayout.vue';
 import { Head, router, usePage } from '@inertiajs/vue3';
-import { defineProps, ref, onMounted, onUnmounted } from 'vue';
+import { defineProps, ref, onMounted, onUnmounted, nextTick } from 'vue';
 import axios from 'axios';
 
 // ============================
@@ -97,6 +97,9 @@ const newMessage = ref("");
 const fetchComments = async () => {
     const res = await axios.get(`/subtasks/${props.subtask.id}/comments`);
     comments.value = res.data.comments;
+
+    // scroll ke bawah setelah update comments
+    nextTick(() => scrollToBottom());
 };
 
 // Kirim komentar
@@ -109,8 +112,9 @@ const sendComment = async () => {
     });
 
     newMessage.value = "";
-    fetchComments();
+    await fetchComments(); // otomatis scroll ke bawah
 };
+
 
 // ============================
 // FORMAT LABEL TANGGAL (Today / Yesterday)
@@ -192,6 +196,13 @@ onMounted(() => {
     window.addEventListener('scroll', onScroll);
     onUnmounted(() => window.removeEventListener('scroll', onScroll));
 });
+
+const scrollToBottom = () => {
+    const container = commentContainerRef.value;
+    if (container) {
+        container.scrollTop = container.scrollHeight;
+    }
+};
 
 
 </script>
@@ -414,6 +425,7 @@ onMounted(() => {
                         type="text"
                         class="flex-1 rounded-lg border px-3 py-2 dark:bg-black dark:text-white"
                         placeholder="Tulis komentar..."
+                        @keyup.enter="sendComment"
                     />
 
                     <button
