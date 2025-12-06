@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import AppLayout from '@/layouts/AppLayout.vue';
 import { Head, router, usePage } from '@inertiajs/vue3';
-import { defineProps, ref, onMounted, onUnmounted, nextTick } from 'vue';
+import { ref, onMounted, onUnmounted, nextTick } from 'vue';
 import axios from 'axios';
 
 // ============================
@@ -30,6 +30,7 @@ interface CommentType {
     message: string | null;
     file_path?: string | null;
     created_at: string;
+    updated_at:string;
 }
 
 // ============================
@@ -204,6 +205,67 @@ const scrollToBottom = () => {
     }
 };
 
+// EDIT PESAN
+const openMenu = (comment: CommentType) => {
+    console.log("Menu clicked for comment:", comment.id);
+    // nanti bisa kamu isi: edit, delete, reply, dll.
+};
+
+// ============================
+// MENU STATE
+// ============================
+const activeMenuId = ref<number | null>(null);
+
+const toggleMenu = (id: number) => {
+    activeMenuId.value = activeMenuId.value === id ? null : id;
+};
+
+const closeMenu = () => {
+    activeMenuId.value = null;
+};
+
+onMounted(() => {
+    window.addEventListener("click", closeMenu);
+});
+onUnmounted(() => {
+    window.removeEventListener("click", closeMenu);
+});
+
+// ============================
+// EDIT COMMENT STATE
+// ============================
+const isEditingComment = ref(false);
+const editingCommentId = ref<number | null>(null);
+const editingOldMessage = ref("");
+
+// Mulai edit
+const startEditComment = (comment: CommentType) => {
+    isEditingComment.value = true;
+    editingCommentId.value = comment.id;
+    editingOldMessage.value = comment.message ?? "";
+    newMessage.value = comment.message ?? ""; // isi ke input
+};
+
+// Batal edit
+const cancelEdit = () => {
+    isEditingComment.value = false;
+    editingCommentId.value = null;
+    editingOldMessage.value = "";
+    newMessage.value = "";
+};
+
+// Simpan edit
+const saveEditedComment = async () => {
+    if (!editingCommentId.value) return;
+
+    await axios.put(`/comments/${editingCommentId.value}`, {
+        message: newMessage.value,
+        edited: true,
+    });
+
+    cancelEdit();
+    await fetchComments();
+};
 
 </script>
 
@@ -390,14 +452,56 @@ const scrollToBottom = () => {
 
                                 <!-- Bubble dengan timestamp di dalam -->
                                 <div
-                                    :class="[
-                                        'relative px-2 pr-5 pb-4 py-2 rounded-xl shadow-md leading-relaxed w-fit',
-                                        comment.user_id === user.id
-                                            ? 'bg-[#055A99] text-white self-end'
-                                            : 'bg-gray-200 text-gray-800 self-start'
-                                    ]"
+                                    class="relative group px-2 pr-7 pb-4 py-2 rounded-xl shadow-md leading-relaxed w-fit"
+                                    :class="comment.user_id === user.id
+                                        ? 'bg-[#055A99] text-white self-end'
+                                        : 'bg-gray-200 text-gray-800 self-start'"
                                 >
-                                    {{ comment.message }}
+                                    <!-- ⋮ MENU ICON (muncul saat hover) -->
+                                    <button
+                                        class="absolute top-1 text-gray-700 opacity-0 group-hover:opacity-500 transition-opacity duration-200"
+                                        :class="comment.user_id === user.id ? 'left-[-20px]' : 'right-[-20px]'"
+                                        @click.stop="toggleMenu(comment.id)"
+                                    >
+                                        ⋮
+                                    </button>
+
+                                    <!-- MENU DROPDOWN -->
+                                    <div
+                                        v-if="activeMenuId === comment.id"
+                                        class="absolute top-5 z-20 w-32 rounded-lg border bg-white shadow-md text-sm"
+                                        :class="comment.user_id === user.id ? 'left-[-140px]' : 'right-[-140px]'"
+                                        @click.stop
+                                    >
+                                        <!-- MENU KHUSUS PEMILIK PESAN -->
+                                        <template v-if="comment.user_id === user.id">
+                                            <div
+                                                class="px-3 py-2 hover:bg-gray-100 cursor-pointer text-blue-500"
+                                                @click="startEditComment(comment); activeMenuId = null"
+                                            >
+                                                Edit
+                                            </div>
+                                            <div class="px-3 py-2 hover:bg-gray-100 cursor-pointer text-red-500">Delete</div>
+                                            <div class="px-3 py-2 hover:bg-gray-100 cursor-pointer text-gray-700">Reply</div>
+                                            <div class="px-3 py-2 hover:bg-gray-100 cursor-pointer text-gray-700">Copy</div>
+                                        </template>
+
+                                        <!-- MENU UNTUK USER LAIN -->
+                                        <template v-else>
+                                            <div class="px-3 py-2 hover:bg-gray-100 cursor-pointer text-gray-700">Reply</div>
+                                            <div class="px-3 py-2 hover:bg-gray-100 cursor-pointer text-gray-700">Copy</div>
+                                        </template>
+                                    </div>
+
+                                    <div class="flex items-end gap-1">
+                                        <span>{{ comment.message }}</span>
+                                        <span
+                                            v-if="comment.updated_at !== comment.created_at"
+                                            class="text-[9px] italic opacity-70"
+                                        >
+                                            (edited)
+                                        </span>
+                                    </div>
 
                                     <!-- TIMESTAMP DI DALAM BUBBLE -->
                                     <span
@@ -415,19 +519,28 @@ const scrollToBottom = () => {
                     </div>
                 </div>
 
-                <!-- INPUT -->
-                <div
-                    class="flex items-center gap-2 mt-4 pt-3 border-t"
-                    :class="isCommentSticky ? 'sticky bottom-0 bg-white dark:bg-gray-800 z-10' : ''"
-                >
+                <!-- MODE EDIT -->
+                <div v-if="isEditingComment" class="flex gap-2 items-center w-full">
                     <input
                         v-model="newMessage"
-                        type="text"
                         class="flex-1 rounded-lg border px-3 py-2 dark:bg-black dark:text-white"
-                        placeholder="Tulis komentar..."
+                        @keyup.enter="saveEditedComment"
+                    />
+                    <button
+                        @click="saveEditedComment"
+                        class="rounded-lg bg-blue-600 px-3 py-2 text-white"
+                    >
+                        Save
+                    </button>
+                </div>
+
+                <!-- MODE NORMAL -->
+                <div v-else class="flex gap-2 items-center w-full">
+                    <input
+                        v-model="newMessage"
+                        class="flex-1 rounded-lg border px-3 py-2 dark:bg-black dark:text-white"
                         @keyup.enter="sendComment"
                     />
-
                     <button
                         @click="sendComment"
                         class="rounded-lg bg-[#033A63] px-4 py-2 text-white hover:bg-[#055A99]"
@@ -435,6 +548,7 @@ const scrollToBottom = () => {
                         Send
                     </button>
                 </div>
+
             </div>
         </div>
     </AppLayout>
