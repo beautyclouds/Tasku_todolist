@@ -281,6 +281,32 @@ const deleteComment = async (commentId: number) => {
         alert("Gagal menghapus pesan. Coba lagi.");
     }
 };
+
+// ============================
+// 📋 COPY COMMENT LOGIC
+// ============================
+const copyComment = async (message: string | null) => {
+    // Pastikan pesan tidak kosong
+    if (!message) {
+        alert('Pesan kosong, tidak ada yang disalin.');
+        activeMenuId.value = null;
+        return;
+    }
+
+    try {
+        // Menggunakan Clipboard API untuk menyalin teks
+        await navigator.clipboard.writeText(message);
+        alert('Pesan berhasil disalin ke clipboard!');
+        
+        // Tutup menu setelah berhasil
+        activeMenuId.value = null;
+    } catch (err) {
+        // Fallback jika browser tidak mendukung navigator.clipboard
+        console.error('Gagal menyalin. Fallback ke cara lama.', err);
+        // Fallback sederhana (biasanya tidak diperlukan pada browser modern)
+        alert('Gagal menyalin pesan.');
+    }
+};
 </script>
 
 <template>
@@ -444,7 +470,6 @@ const deleteComment = async (commentId: number) => {
                                         : 'bg-gray-200 text-gray-800 self-start dark:bg-gray-700 dark:text-gray-200'"
                                 >
                                     <button
-                                        v-if="comment.user_id === user.id"
                                         class="absolute top-1 text-gray-700 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
                                         :class="comment.user_id === user.id ? 'left-[-20px]' : 'right-[-20px]'"
                                         @click.stop="toggleMenu(comment.id)"
@@ -459,27 +484,45 @@ const deleteComment = async (commentId: number) => {
                                         @click.stop
                                     >
                                         <template v-if="comment.user_id === user.id">
+    
                                             <div
                                                 class="px-3 py-2 hover:bg-gray-100 cursor-pointer text-blue-500 dark:hover:bg-gray-700"
                                                 @click="startEditComment(comment); activeMenuId = null"
                                             >
                                                 Edit
                                             </div>
-                                            <template v-if="comment.user_id === user.id">
-                                                <div 
-                                                    class="px-3 py-2 hover:bg-gray-100 cursor-pointer text-red-500 dark:hover:bg-gray-700"
-                                                    @click="deleteComment(comment.id)"
-                                                >
-                                                    Delete
-                                                </div>
-                                             </template>
-                                            <div class="px-3 py-2 hover:bg-gray-100 cursor-pointer text-gray-700 dark:text-gray-300 dark:hover:bg-gray-700">Reply</div>
-                                            <div class="px-3 py-2 hover:bg-gray-100 cursor-pointer text-gray-700 dark:text-gray-300 dark:hover:bg-gray-700">Copy</div>
+    
+                                            <div 
+                                                class="px-3 py-2 hover:bg-gray-100 cursor-pointer text-red-500 dark:hover:bg-gray-700"
+                                                @click="deleteComment(comment.id)"
+                                            >
+                                                Delete
+                                            </div>
+
+                                            <div class="px-3 py-2 hover:bg-gray-100 cursor-pointer text-gray-700 dark:text-gray-300 dark:hover:bg-gray-700">
+                                                Reply
+                                            </div>
+    
+                                            <div 
+                                                class="px-3 py-2 hover:bg-gray-100 cursor-pointer text-gray-700 dark:text-gray-300 dark:hover:bg-gray-700"
+                                                @click="copyComment(comment.message)"
+                                            >
+                                                Copy
+                                            </div>
                                         </template>
 
                                         <template v-else>
-                                            <div class="px-3 py-2 hover:bg-gray-100 cursor-pointer text-gray-700 dark:text-gray-300 dark:hover:bg-gray-700">Reply</div>
-                                            <div class="px-3 py-2 hover:bg-gray-100 cursor-pointer text-gray-700 dark:text-gray-300 dark:hover:bg-gray-700">Copy</div>
+    
+                                            <div class="px-3 py-2 hover:bg-gray-100 cursor-pointer text-gray-700 dark:text-gray-300 dark:hover:bg-gray-700">
+                                                Reply
+                                            </div>
+
+                                            <div 
+                                                class="px-3 py-2 hover:bg-gray-100 cursor-pointer text-gray-700 dark:text-gray-300 dark:hover:bg-gray-700"
+                                                @click="copyComment(comment.message)"
+                                            >
+                                                Copy
+                                            </div>
                                         </template>
                                     </div>
 
