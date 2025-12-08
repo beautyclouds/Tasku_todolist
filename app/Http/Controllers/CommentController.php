@@ -69,4 +69,19 @@ class CommentController extends Controller
         // 4. Beri respon sukses
         return response()->json(['message' => 'Comment updated successfully.', 'comment' => $comment], 200);
     }
+
+    public function destroy(Comment $comment)
+    {
+        // 1. Otorisasi (PENTING!)
+        // Pastikan user yang login adalah pemilik pesan.
+        if ($comment->user_id !== auth()->id()) {
+            return response()->json(['message' => 'Unauthorized: You are not the owner of this comment.'], 403);
+        }
+
+        // 2. Hapus Komentar
+        $comment->delete();
+        
+        // 3. Beri respon sukses
+        return response()->json(['message' => 'Comment deleted successfully.'], 200);
+    }
 }

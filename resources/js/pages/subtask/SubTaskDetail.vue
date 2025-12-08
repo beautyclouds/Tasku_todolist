@@ -259,6 +259,28 @@ const saveEditedComment = async () => {
     cancelEdit();
     await fetchComments();
 };
+
+// ============================
+// 🗑️ DELETE COMMENT LOGIC
+// ============================
+const deleteComment = async (commentId: number) => {
+    // Konfirmasi penghapusan
+    if (!confirm("Are you sure you want to delete this comment?")) {
+        return;
+    }
+
+    try {
+        // Kirim permintaan DELETE ke backend
+        await axios.delete(`/comments/${commentId}`);
+        
+        // Tutup menu dan refresh list komentar
+        activeMenuId.value = null;
+        await fetchComments();
+    } catch (error) {
+        console.error("Failed to delete comment:", error);
+        alert("Gagal menghapus pesan. Coba lagi.");
+    }
+};
 </script>
 
 <template>
@@ -443,7 +465,14 @@ const saveEditedComment = async () => {
                                             >
                                                 Edit
                                             </div>
-                                            <div class="px-3 py-2 hover:bg-gray-100 cursor-pointer text-red-500 dark:hover:bg-gray-700">Delete</div>
+                                            <template v-if="comment.user_id === user.id">
+                                                <div 
+                                                    class="px-3 py-2 hover:bg-gray-100 cursor-pointer text-red-500 dark:hover:bg-gray-700"
+                                                    @click="deleteComment(comment.id)"
+                                                >
+                                                    Delete
+                                                </div>
+                                             </template>
                                             <div class="px-3 py-2 hover:bg-gray-100 cursor-pointer text-gray-700 dark:text-gray-300 dark:hover:bg-gray-700">Reply</div>
                                             <div class="px-3 py-2 hover:bg-gray-100 cursor-pointer text-gray-700 dark:text-gray-300 dark:hover:bg-gray-700">Copy</div>
                                         </template>
