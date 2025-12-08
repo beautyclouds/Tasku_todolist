@@ -30,7 +30,7 @@ interface CommentType {
     message: string | null;
     file_path?: string | null;
     created_at: string;
-    updated_at:string;
+    updated_at: string; // Harus ada untuk deteksi (edited)
 }
 
 // ============================
@@ -66,7 +66,7 @@ const saveEdit = () => {
 };
 
 // ============================
-// FORMAT DATE DETAIL
+// FORMATTING & TIME UTILS
 // ============================
 const formatDate = (dateStr: string) => {
     const date = new Date(dateStr);
@@ -79,47 +79,12 @@ const formatDate = (dateStr: string) => {
     });
 };
 
-// ============================
-// NORMALISASI TANGGAL (FIX TIMEZONE)
-// ============================
 const normalizeDate = (str: string) => {
-    const d = new Date(str); // dari server (UTC)
-    d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); // ubah ke WIB
+    const d = new Date(str);
+    d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
     return d;
 };
 
-// ============================
-// COMMENT SYSTEM
-// ============================
-const comments = ref<CommentType[]>(props.comments ?? []);
-const newMessage = ref("");
-
-// Ambil komentar
-const fetchComments = async () => {
-    const res = await axios.get(`/subtasks/${props.subtask.id}/comments`);
-    comments.value = res.data.comments;
-
-    // scroll ke bawah setelah update comments
-    nextTick(() => scrollToBottom());
-};
-
-// Kirim komentar
-const sendComment = async () => {
-    if (!newMessage.value.trim()) return;
-
-    await axios.post(`/subtasks/${props.subtask.id}/comments`, {
-        type: "text",
-        message: newMessage.value,
-    });
-
-    newMessage.value = "";
-    await fetchComments(); // otomatis scroll ke bawah
-};
-
-
-// ============================
-// FORMAT LABEL TANGGAL (Today / Yesterday)
-// ============================
 const formatDateLabel = (dateStr: string) => {
     const date = normalizeDate(dateStr);
     const now = normalizeDate(new Date().toISOString());
@@ -139,9 +104,6 @@ const formatDateLabel = (dateStr: string) => {
     });
 };
 
-// ============================
-// SHOW LABEL JIKA BERBEDA HARI
-// ============================
 const shouldShowDateLabel = (index: number) => {
     if (index === 0) return true;
 
@@ -151,14 +113,6 @@ const shouldShowDateLabel = (index: number) => {
     return current !== previous;
 };
 
-// ============================
-// ON MOUNT
-// ============================
-onMounted(() => {
-    fetchComments();
-});
-
-// FORMAT JAM (HH:MM)
 const formatTime = (dateStr: string) => {
     const date = new Date(dateStr);
     return date.toLocaleTimeString('id-ID', {
@@ -168,12 +122,18 @@ const formatTime = (dateStr: string) => {
 };
 
 // ============================
-// SCROLL CONTROL COMMENT SECTION
+// SCROLL CONTROL & STICKY HEADER
 // ============================
-
 const isCommentSticky = ref(false);
 const commentHeaderRef = ref<HTMLElement | null>(null);
 const commentContainerRef = ref<HTMLElement | null>(null);
+
+const scrollToBottom = () => {
+    const container = commentContainerRef.value;
+    if (container) {
+        container.scrollTop = container.scrollHeight;
+    }
+};
 
 onMounted(() => {
     const onScroll = () => {
@@ -186,7 +146,6 @@ onMounted(() => {
 
         if (rect.top <= topbarHeight) {
             isCommentSticky.value = true;
-            // atur tinggi container chat agar scrollable di bawah header
             containerEl.style.maxHeight = `${window.innerHeight - topbarHeight - headerEl.offsetHeight - 20}px`;
         } else {
             isCommentSticky.value = false;
@@ -196,19 +155,37 @@ onMounted(() => {
 
     window.addEventListener('scroll', onScroll);
     onUnmounted(() => window.removeEventListener('scroll', onScroll));
+
+    // Panggil fetchComments saat mount
+    fetchComments();
 });
 
-const scrollToBottom = () => {
-    const container = commentContainerRef.value;
-    if (container) {
-        container.scrollTop = container.scrollHeight;
-    }
+// ============================
+// COMMENT SYSTEM
+// ============================
+const comments = ref<CommentType[]>(props.comments ?? []);
+// Digunakan HANYA untuk mengirim pesan BARU
+const newMessage = ref("");
+
+// Ambil komentar
+const fetchComments = async () => {
+    const res = await axios.get(`/subtasks/${props.subtask.id}/comments`);
+    comments.value = res.data.comments;
+
+    nextTick(() => scrollToBottom());
 };
 
-// EDIT PESAN
-const openMenu = (comment: CommentType) => {
-    console.log("Menu clicked for comment:", comment.id);
-    // nanti bisa kamu isi: edit, delete, reply, dll.
+// Kirim komentar BARU
+const sendComment = async () => {
+    if (!newMessage.value.trim()) return;
+
+    await axios.post(`/subtasks/${props.subtask.id}/comments`, {
+        type: "text",
+        message: newMessage.value,
+    });
+
+    newMessage.value = "";
+    await fetchComments();
 };
 
 // ============================
@@ -231,19 +208,24 @@ onUnmounted(() => {
     window.removeEventListener("click", closeMenu);
 });
 
+
 // ============================
-// EDIT COMMENT STATE
+// 🌟 EDIT COMMENT STATE (LOGIKA PERBAIKAN) 🌟
 // ============================
 const isEditingComment = ref(false);
 const editingCommentId = ref<number | null>(null);
 const editingOldMessage = ref("");
+// ⭐ VARIABEL BARU KHUSUS UNTUK EDIT
+const editedMessage = ref("");
+
 
 // Mulai edit
 const startEditComment = (comment: CommentType) => {
     isEditingComment.value = true;
     editingCommentId.value = comment.id;
     editingOldMessage.value = comment.message ?? "";
-    newMessage.value = comment.message ?? ""; // isi ke input
+    editedMessage.value = comment.message ?? ""; // Isi ke input edit
+    activeMenuId.value = null; // Tutup menu setelah klik edit
 };
 
 // Batal edit
@@ -251,24 +233,33 @@ const cancelEdit = () => {
     isEditingComment.value = false;
     editingCommentId.value = null;
     editingOldMessage.value = "";
-    newMessage.value = "";
+    editedMessage.value = "";
 };
 
 // Simpan edit
 const saveEditedComment = async () => {
-    if (!editingCommentId.value) return;
+    if (!editingCommentId.value || !editedMessage.value.trim()) return;
 
-    await axios.put(`/comments/${editingCommentId.value}`, {
-        message: newMessage.value,
-        edited: true,
-    });
+    // Cek apakah ada perubahan
+    if (editedMessage.value.trim() === editingOldMessage.value.trim()) {
+        cancelEdit();
+        return;
+    }
+
+    try {
+        await axios.put(`/comments/${editingCommentId.value}`, {
+            message: editedMessage.value, // Kirim pesan yang sudah diedit
+            edited: true,
+        });
+    } catch (error) {
+        console.error("Gagal menyimpan edit:", error);
+        alert("Gagal menyimpan perubahan. Coba lagi.");
+    }
 
     cancelEdit();
     await fetchComments();
 };
-
 </script>
-
 
 <template>
     <Head title="Subtask Detail" />
@@ -276,17 +267,14 @@ const saveEditedComment = async () => {
     <AppLayout>
         <div class="space-y-6 rounded-xl border bg-white p-6 shadow-md dark:bg-gray-800">
             <div class="grid grid-cols-3 items-center">
-                <!-- Kiri: Tombol Back -->
                 <div class="flex justify-start">
                     <button @click="goBack" class="text-3xl font-extrabold text-[#033A63] hover:text-[#022d4d] dark:text-white">←</button>
                 </div>
 
-                <!-- Tengah: Judul Card (center) -->
                 <div class="flex justify-center">
                     <h1 class="text-xl font-bold text-[#033A63] dark:text-gray-200">📋 {{ props.card.title }}</h1>
                 </div>
 
-                <!-- Kanan: Tombol Edit -->
                 <div class="flex justify-end">
                     <button
                         v-if="!isEditing"
@@ -299,32 +287,25 @@ const saveEditedComment = async () => {
                 </div>
             </div>
 
-            <!-- 📌 Judul Subtask -->
             <div>
-                <!-- Normal Mode -->
                 <h2 v-if="!isEditing" class="text-2xl font-bold text-[#033A63] dark:text-gray-100">📌 {{ props.subtask.name }}</h2>
 
-                <!-- Edit Mode -->
                 <div v-else class="space-y-2">
                     <label class="font-semibold dark:text-gray-200">📌 Judul Subtask:</label>
                     <input v-model="editedName" class="w-full rounded-lg border p-3 dark:bg-black dark:text-white" placeholder="Nama Subtask..." />
                 </div>
             </div>
 
-            <!-- 📘 Deskripsi -->
             <div>
                 <h2 class="mb-2 font-semibold dark:text-gray-200">📘 Deskripsi:</h2>
 
-                <!-- Normal mode -->
                 <div v-if="!isEditing" class="rounded-lg border bg-gray-50 p-4 dark:bg-black">
                     <p class="whitespace-pre-line text-gray-700 dark:text-gray-300">
                         {{ props.subtask.description ?? 'Belum ada deskripsi.' }}
                     </p>
                 </div>
 
-                <!-- Edit mode -->
                 <div v-else class="space-y-4">
-                    <!-- Deskripsi Edit -->
                     <textarea
                         v-model="editedDescription"
                         rows="6"
@@ -332,7 +313,6 @@ const saveEditedComment = async () => {
                         placeholder="Tulis deskripsi..."
                     ></textarea>
 
-                    <!-- Save & Cancel di bawah deskripsi -->
                     <div class="flex gap-3">
                         <button @click="saveEdit" class="rounded-lg bg-[#033A63] px-4 py-2 text-white hover:bg-blue-900">Save</button>
 
@@ -340,27 +320,21 @@ const saveEditedComment = async () => {
                     </div>
                 </div>
             </div>
-
-            <!-- 🗓️ Tanggal dibuat -->
             <p class="mb-3 text-sm text-gray-600 dark:text-gray-300">🗓️ <strong>Dibuat:</strong> {{ formatDate(props.subtask.created_at) }}</p>
 
-            <!-- 🕒 Deadline Card -->
             <p class="mb-3 text-sm text-gray-600 dark:text-gray-300">
                 🕒 <strong>Deadline Card:</strong>
                 {{ props.card.deadline ? formatDate(props.card.deadline) : 'Tidak ada deadline.' }}
             </p>
 
-            <!-- 🔄 Terakhir diupdate -->
             <p class="text-sm text-gray-600 dark:text-gray-300">
                 🔄 <strong>Update Terakhir:</strong>
                 {{ props.subtask.updated_at ? formatDate(props.subtask.updated_at) : '-' }}
             </p>
 
-            <!-- 👥 Collaborators -->
             <div>
                 <h2 class="mb-2 font-semibold dark:text-gray-200">👥 Collaborators:</h2>
                 <div class="flex flex-wrap gap-3">
-                    <!-- 🔹 OWNER -->
                     <div class="flex items-center gap-2 rounded-full bg-gray-100 px-3 py-1 dark:bg-black">
                         <img
                             :src="
@@ -373,7 +347,6 @@ const saveEditedComment = async () => {
                         <span class="text-sm font-medium dark:text-gray-200"> {{ props.card.user?.name }} (Owner) </span>
                     </div>
 
-                    <!-- 🔹 COLLABORATORS -->
                     <div
                         v-for="col in props.collaborators"
                         :key="col.id"
@@ -394,9 +367,8 @@ const saveEditedComment = async () => {
                 </p>
             </div>
 
-            <!-- 💬 KOMENTAR SUBTASK -->
+
             <div class="mt-12 relative">
-                <!-- HEADER KOMENTAR -->
                 <h2
                     ref="commentHeaderRef"
                     class="flex justify-center text-lg font-semibold text-[#033A63] dark:text-gray-100 sticky z-10 bg-white dark:bg-gray-800 py-2 border-b"
@@ -405,20 +377,17 @@ const saveEditedComment = async () => {
                     💬 Komentar
                 </h2>
 
-                <!-- LIST KOMENTAR -->
                 <div
                     ref="commentContainerRef"
                     class="space-y-2 p-2 overflow-y-auto transition-all duration-200"
                 >
 
-                    <!-- Tambahan space rapi di atas komentar -->
                     <div class="h-2"></div>
                     <div
                         v-for="(comment, index) in comments"
                         :key="comment.id"
                         class="flex flex-col gap-1"
                     >
-                        <!-- Label tanggal -->
                         <div
                             v-if="shouldShowDateLabel(index)"
                             class="text-center text-gray-800 text-xs my-3"
@@ -426,12 +395,10 @@ const saveEditedComment = async () => {
                             {{ formatDateLabel(comment.created_at) }}
                         </div>
 
-                        <!-- Chat row -->
                         <div
                             class="flex gap-2"
                             :class="comment.user_id === user.id ? 'justify-end' : 'justify-start'"
                         >
-                            <!-- Avatar hanya untuk orang lain -->
                             <img
                                 v-if="comment.user_id !== user.id"
                                 :src="comment.user.avatar
@@ -440,110 +407,116 @@ const saveEditedComment = async () => {
                                 class="h-8 w-8 rounded-full shadow border"
                             />
 
-                            <!-- Chat Column -->
                             <div class="flex flex-col max-w-[70%]">
-                                <!-- Nama pengirim (hanya untuk orang lain) -->
                                 <span
                                     v-if="comment.user_id !== user.id"
-                                    class="text-[11px] font-semibold mb-1 text-left text-gray-700"
+                                    class="text-[11px] font-semibold mb-1 text-left text-gray-700 dark:text-gray-300"
                                 >
                                     {{ comment.user.name }}
                                 </span>
 
-                                <!-- Bubble dengan timestamp di dalam -->
                                 <div
-                                    class="relative group px-2 pr-7 pb-4 py-2 rounded-xl shadow-md leading-relaxed w-fit"
+                                    class="relative group px-2 pr-7 pb-4 py-2 rounded-xl shadow-md leading-relaxed w-fit min-w-[80px]"
                                     :class="comment.user_id === user.id
                                         ? 'bg-[#055A99] text-white self-end'
-                                        : 'bg-gray-200 text-gray-800 self-start'"
+                                        : 'bg-gray-200 text-gray-800 self-start dark:bg-gray-700 dark:text-gray-200'"
                                 >
-                                    <!-- ⋮ MENU ICON (muncul saat hover) -->
                                     <button
-                                        class="absolute top-1 text-gray-700 opacity-0 group-hover:opacity-500 transition-opacity duration-200"
+                                        v-if="comment.user_id === user.id"
+                                        class="absolute top-1 text-gray-700 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
                                         :class="comment.user_id === user.id ? 'left-[-20px]' : 'right-[-20px]'"
                                         @click.stop="toggleMenu(comment.id)"
                                     >
                                         ⋮
                                     </button>
 
-                                    <!-- MENU DROPDOWN -->
                                     <div
                                         v-if="activeMenuId === comment.id"
-                                        class="absolute top-5 z-20 w-32 rounded-lg border bg-white shadow-md text-sm"
+                                        class="absolute top-5 z-20 w-32 rounded-lg border bg-white shadow-md text-sm dark:bg-gray-800"
                                         :class="comment.user_id === user.id ? 'left-[-140px]' : 'right-[-140px]'"
                                         @click.stop
                                     >
-                                        <!-- MENU KHUSUS PEMILIK PESAN -->
                                         <template v-if="comment.user_id === user.id">
                                             <div
-                                                class="px-3 py-2 hover:bg-gray-100 cursor-pointer text-blue-500"
+                                                class="px-3 py-2 hover:bg-gray-100 cursor-pointer text-blue-500 dark:hover:bg-gray-700"
                                                 @click="startEditComment(comment); activeMenuId = null"
                                             >
                                                 Edit
                                             </div>
-                                            <div class="px-3 py-2 hover:bg-gray-100 cursor-pointer text-red-500">Delete</div>
-                                            <div class="px-3 py-2 hover:bg-gray-100 cursor-pointer text-gray-700">Reply</div>
-                                            <div class="px-3 py-2 hover:bg-gray-100 cursor-pointer text-gray-700">Copy</div>
+                                            <div class="px-3 py-2 hover:bg-gray-100 cursor-pointer text-red-500 dark:hover:bg-gray-700">Delete</div>
+                                            <div class="px-3 py-2 hover:bg-gray-100 cursor-pointer text-gray-700 dark:text-gray-300 dark:hover:bg-gray-700">Reply</div>
+                                            <div class="px-3 py-2 hover:bg-gray-100 cursor-pointer text-gray-700 dark:text-gray-300 dark:hover:bg-gray-700">Copy</div>
                                         </template>
 
-                                        <!-- MENU UNTUK USER LAIN -->
                                         <template v-else>
-                                            <div class="px-3 py-2 hover:bg-gray-100 cursor-pointer text-gray-700">Reply</div>
-                                            <div class="px-3 py-2 hover:bg-gray-100 cursor-pointer text-gray-700">Copy</div>
+                                            <div class="px-3 py-2 hover:bg-gray-100 cursor-pointer text-gray-700 dark:text-gray-300 dark:hover:bg-gray-700">Reply</div>
+                                            <div class="px-3 py-2 hover:bg-gray-100 cursor-pointer text-gray-700 dark:text-gray-300 dark:hover:bg-gray-700">Copy</div>
                                         </template>
                                     </div>
 
                                     <div class="flex items-end gap-1">
                                         <span>{{ comment.message }}</span>
+                                    </div>
+
+                                    <span
+                                        class="absolute bottom-1 right-2 text-[9px] flex items-center gap-1"
+                                        :class="comment.user_id === user.id ? 'text-gray-200' : 'text-gray-600'"
+                                    >
                                         <span
                                             v-if="comment.updated_at !== comment.created_at"
-                                            class="text-[9px] italic opacity-70"
+                                            class="italic opacity-80"
+                                            :class="comment.user_id === user.id ? 'text-gray-200/90' : 'text-gray-600/90'"
                                         >
                                             (edited)
                                         </span>
-                                    </div>
 
-                                    <!-- TIMESTAMP DI DALAM BUBBLE -->
-                                    <span
-                                        class="absolute bottom-1 right-2 text-[9px]"
-                                        :class="comment.user_id === user.id ? 'text-gray-200' : 'text-gray-600'"
-                                    >
-                                        {{ formatTime(comment.created_at) }}
+                                        <span>{{ formatTime(comment.created_at) }}</span>
                                     </span>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Small spacing after each bubble -->
                         <div class="h-1"></div>
                     </div>
                 </div>
 
-                <!-- MODE EDIT -->
-                <div v-if="isEditingComment" class="flex gap-2 items-center w-full">
-                    <input
-                        v-model="newMessage"
-                        class="flex-1 rounded-lg border px-3 py-2 dark:bg-black dark:text-white"
-                        @keyup.enter="saveEditedComment"
-                    />
-                    <button
-                        @click="saveEditedComment"
-                        class="rounded-lg bg-blue-600 px-3 py-2 text-white"
-                    >
-                        Save
-                    </button>
+                <div v-if="isEditingComment" class="w-full mt-4 border-t pt-4">
+                    <div class="flex justify-between items-center mb-1 p-1 rounded-t-lg bg-gray-100 dark:bg-gray-700">
+                        <span class="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                            Mengedit pesan...
+                        </span>
+                        <button @click="cancelEdit" class="text-gray-500 hover:text-red-600 font-bold text-lg leading-none p-1">
+                            &times; </button>
+                    </div>
+
+                    <div class="flex gap-2 items-center w-full">
+                        <input
+                            v-model="editedMessage"
+                            class="flex-1 rounded-lg border px-3 py-2 dark:bg-black dark:text-white"
+                            @keyup.enter="saveEditedComment"
+                            placeholder="Edit pesan Anda..."
+                        />
+                        <button
+                            @click="saveEditedComment"
+                            class="rounded-lg bg-[#033A63] px-3 py-2 text-white hover:bg-[#055A99] disabled:bg-[#3B8BC9]"
+                            :disabled="!editedMessage.trim() || editedMessage.trim() === editingOldMessage.trim()"
+                        >
+                            Save
+                        </button>
+                    </div>
                 </div>
 
-                <!-- MODE NORMAL -->
-                <div v-else class="flex gap-2 items-center w-full">
+                <div v-else class="flex gap-2 items-center w-full mt-4 border-t pt-4">
                     <input
                         v-model="newMessage"
                         class="flex-1 rounded-lg border px-3 py-2 dark:bg-black dark:text-white"
                         @keyup.enter="sendComment"
+                        placeholder="Tulis komentar baru..."
                     />
                     <button
                         @click="sendComment"
-                        class="rounded-lg bg-[#033A63] px-4 py-2 text-white hover:bg-[#055A99]"
+                        class="rounded-lg bg-[#033A63] px-4 py-2 text-white hover:bg-[#055A99] disabled:bg-[#3B8BC9]"
+                        :disabled="!newMessage.trim()"
                     >
                         Send
                     </button>

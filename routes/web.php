@@ -53,6 +53,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Comments API
     Route::get('/subtasks/{id}/comments', [CommentController::class, 'index']);
     Route::post('/subtasks/{id}/comments', [CommentController::class, 'store']);
+    
+    // ⭐ PERBAIKAN 1: Tambahkan route untuk mengupdate komentar tunggal
+    Route::put('/comments/{comment}', [CommentController::class, 'update'])->name('comment.update'); 
 });
 
 require __DIR__.'/settings.php';
