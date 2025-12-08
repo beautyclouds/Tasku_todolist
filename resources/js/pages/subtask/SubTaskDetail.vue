@@ -30,7 +30,7 @@ interface CommentType {
     message: string | null;
     file_path?: string | null;
     created_at: string;
-    updated_at: string; // Harus ada untuk deteksi (edited)
+    updated_at: string; 
 }
 
 // ============================
@@ -175,16 +175,18 @@ const fetchComments = async () => {
     nextTick(() => scrollToBottom());
 };
 
-// Kirim komentar BARU
+// Modifikasi fungsi sendComment untuk menangani reply ID (jika backend mendukung)
 const sendComment = async () => {
     if (!newMessage.value.trim()) return;
 
+    // Payload hanya berisi 'type' dan 'message'
     await axios.post(`/subtasks/${props.subtask.id}/comments`, {
         type: "text",
         message: newMessage.value,
     });
 
     newMessage.value = "";
+    // Tidak ada pemanggilan cancelReply()
     await fetchComments();
 };
 
@@ -283,10 +285,33 @@ const deleteComment = async (commentId: number) => {
 };
 
 // ============================
-// 📋 COPY COMMENT LOGIC
+// 🌟 NOTIFIKASI TOAST STATE 🌟
+// ============================
+const showCopySuccess = ref(false); // State untuk menampilkan notifikasi
+let timeoutId: number | null = null;
+
+// Fungsi untuk menampilkan notifikasi sukses selama 2 detik
+const triggerSuccessToast = () => {
+    // 1. Bersihkan timeout sebelumnya (jika ada)
+    if (timeoutId !== null) {
+        clearTimeout(timeoutId);
+    }
+    
+    // 2. Tampilkan notifikasi
+    showCopySuccess.value = true;
+
+    // 3. Atur agar notifikasi hilang setelah 2000 ms (2 detik)
+    timeoutId = setTimeout(() => {
+        showCopySuccess.value = false;
+        timeoutId = null;
+    }, 2000); // 2 detik
+};
+
+
+// ============================
+// 📋 COPY COMMENT LOGIC (Diubah)
 // ============================
 const copyComment = async (message: string | null) => {
-    // Pastikan pesan tidak kosong
     if (!message) {
         alert('Pesan kosong, tidak ada yang disalin.');
         activeMenuId.value = null;
@@ -294,19 +319,20 @@ const copyComment = async (message: string | null) => {
     }
 
     try {
-        // Menggunakan Clipboard API untuk menyalin teks
         await navigator.clipboard.writeText(message);
-        alert('Pesan berhasil disalin ke clipboard!');
         
-        // Tutup menu setelah berhasil
+        // ❌ HAPUS: alert('Pesan berhasil disalin ke clipboard!'); 
+        
+        // ✅ GANTI: Panggil toast yang baru
+        triggerSuccessToast(); 
+        
         activeMenuId.value = null;
     } catch (err) {
-        // Fallback jika browser tidak mendukung navigator.clipboard
-        console.error('Gagal menyalin. Fallback ke cara lama.', err);
-        // Fallback sederhana (biasanya tidak diperlukan pada browser modern)
+        console.error('Gagal menyalin.', err);
         alert('Gagal menyalin pesan.');
     }
 };
+
 </script>
 
 <template>
@@ -499,7 +525,9 @@ const copyComment = async (message: string | null) => {
                                                 Delete
                                             </div>
 
-                                            <div class="px-3 py-2 hover:bg-gray-100 cursor-pointer text-gray-700 dark:text-gray-300 dark:hover:bg-gray-700">
+                                            <div 
+                                                class="px-3 py-2 hover:bg-gray-100 cursor-pointer text-gray-700 dark:text-gray-300 dark:hover:bg-gray-700"
+                                            >
                                                 Reply
                                             </div>
     
@@ -513,7 +541,9 @@ const copyComment = async (message: string | null) => {
 
                                         <template v-else>
     
-                                            <div class="px-3 py-2 hover:bg-gray-100 cursor-pointer text-gray-700 dark:text-gray-300 dark:hover:bg-gray-700">
+                                            <div 
+                                                class="px-3 py-2 hover:bg-gray-100 cursor-pointer text-gray-700 dark:text-gray-300 dark:hover:bg-gray-700"
+                                            >
                                                 Reply
                                             </div>
 
@@ -578,20 +608,33 @@ const copyComment = async (message: string | null) => {
                     </div>
                 </div>
 
-                <div v-else class="flex gap-2 items-center w-full mt-4 border-t pt-4">
-                    <input
-                        v-model="newMessage"
-                        class="flex-1 rounded-lg border px-3 py-2 dark:bg-black dark:text-white"
-                        @keyup.enter="sendComment"
-                        placeholder="Tulis komentar baru..."
-                    />
-                    <button
-                        @click="sendComment"
-                        class="rounded-lg bg-[#033A63] px-4 py-2 text-white hover:bg-[#055A99] disabled:bg-[#3B8BC9]"
-                        :disabled="!newMessage.trim()"
-                    >
-                        Send
-                    </button>
+                <div v-else class="relative w-full mt-4 border-t pt-4">
+    
+                    <Transition name="fade">
+                        <div 
+                            v-if="showCopySuccess"
+                            class="absolute -top-10 left-1/2 -translate-x-1/2 p-2 px-4 rounded-lg bg-gray-200 text-gray-500 text-sm shadow-xl z-30 transition-opacity duration-300"
+                        >
+                            Pesan berhasil disalin ke clipboard!
+                        </div>
+                    </Transition>
+
+                    <div class="flex gap-2 items-center w-full"> 
+                        <input
+                            id="new-message-input"
+                            v-model="newMessage"
+                            class="flex-1 rounded-lg border px-3 py-2 dark:bg-black dark:text-white"
+                            @keyup.enter="sendComment"
+                            placeholder="Tulis komentar baru..."
+                        />
+                        <button
+                            @click="sendComment"
+                            class="rounded-lg bg-[#033A63] px-4 py-2 text-white hover:bg-[#055A99] disabled:bg-[#3B8BC9]"
+                            :disabled="!newMessage.trim()"
+                        >
+                            Send
+                        </button>
+                    </div>
                 </div>
 
             </div>
