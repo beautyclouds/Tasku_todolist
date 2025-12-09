@@ -12,12 +12,20 @@ class CommentController extends Controller
     // Ambil semua komentar per subtask
     public function index($subtaskId)
     {
-        $subtask = SubTask::with('comments.user')->findOrFail($subtaskId);
+        // Ambil semua komentar di subtask ini, diurutkan.
+        // PENTING: Eager load 'parent' dan 'parent.user'
+        $comments = Comment::where('subtask_id', $subtaskId)
+            ->with([
+                'user',
+                'parent' => function ($query) {
+                    $query->select('id', 'user_id', 'message')->with('user:id,name');
+                },
+            ])
+            ->orderBy('created_at', 'asc')
+            ->get();
 
         return response()->json([
-            'comments' => $subtask->comments
-                ->sortBy('created_at')
-                ->values(),
+            'comments' => $comments,
         ]);
     }
 
@@ -52,7 +60,7 @@ class CommentController extends Controller
         // 1. Otorisasi (PENTING!)
         // Pastikan hanya pemilik pesan yang bisa mengedit.
         // Asumsi: 'user_id' di tabel comments menyimpan ID pembuat.
-        if ($comment->user_id !== auth()->id()) {
+        if ($comment->user_id !== Auth::id()) {
             // Mengembalikan respon error 403 Forbidden
             return response()->json(['message' => 'Unauthorized: You are not the owner of this comment.'], 403);
         }
@@ -77,7 +85,7 @@ class CommentController extends Controller
     {
         // 1. Otorisasi (PENTING!)
         // Pastikan user yang login adalah pemilik pesan.
-        if ($comment->user_id !== auth()->id()) {
+        if ($comment->user_id !== Auth::id()) {
             return response()->json(['message' => 'Unauthorized: You are not the owner of this comment.'], 403);
         }
 

@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import AppLayout from '@/layouts/AppLayout.vue';
 import { Head, router, usePage } from '@inertiajs/vue3';
-import { ref, onMounted, onUnmounted, nextTick } from 'vue';
 import axios from 'axios';
+import { nextTick, onMounted, onUnmounted, ref } from 'vue';
 
 // ============================
 // DEFINISI PROPS
@@ -11,7 +11,7 @@ const props = defineProps<{
     subtask: any;
     card: any;
     collaborators: any[];
-    comments: any[];
+    // comments: any[];
 }>();
 
 // ============================
@@ -30,7 +30,7 @@ interface CommentType {
     message: string | null;
     file_path?: string | null;
     created_at: string;
-    updated_at: string; 
+    updated_at: string;
     parent_id?: number | null;
 
     parent?: {
@@ -69,7 +69,7 @@ const saveEdit = () => {
         },
         {
             onSuccess: () => (isEditing.value = false),
-        }
+        },
     );
 };
 
@@ -102,13 +102,13 @@ const formatDateLabel = (dateStr: string) => {
     const yesterday = new Date(now);
     yesterday.setDate(now.getDate() - 1);
 
-    if (date.toDateString() === today) return "Today";
-    if (date.toDateString() === yesterday.toDateString()) return "Yesterday";
+    if (date.toDateString() === today) return 'Today';
+    if (date.toDateString() === yesterday.toDateString()) return 'Yesterday';
 
-    return date.toLocaleDateString("en-US", {
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
+    return date.toLocaleDateString('en-US', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
     });
 };
 
@@ -137,63 +137,63 @@ const commentHeaderRef = ref<HTMLElement | null>(null);
 const commentContainerRef = ref<HTMLElement | null>(null);
 
 const scrollToBottom = () => {
-  const container = commentContainerRef.value;
-  if (container) container.scrollTop = container.scrollHeight;
+    const container = commentContainerRef.value;
+    if (container) container.scrollTop = container.scrollHeight;
 };
 
 // declare handlers in outer scope so we can add/remove the same reference
 const onScroll = () => {
-  const headerEl = commentHeaderRef.value;
-  const containerEl = commentContainerRef.value;
-  if (!headerEl || !containerEl) return;
+    const headerEl = commentHeaderRef.value;
+    const containerEl = commentContainerRef.value;
+    if (!headerEl || !containerEl) return;
 
-  const rect = headerEl.getBoundingClientRect();
-  const topbarHeight = 70; // tinggi topbar
+    const rect = headerEl.getBoundingClientRect();
+    const topbarHeight = 70; // tinggi topbar
 
-  if (rect.top <= topbarHeight) {
-    isCommentSticky.value = true;
-    containerEl.style.maxHeight = `${window.innerHeight - topbarHeight - headerEl.offsetHeight - 20}px`;
-  } else {
-    isCommentSticky.value = false;
-    containerEl.style.maxHeight = 'none';
-  }
+    if (rect.top <= topbarHeight) {
+        isCommentSticky.value = true;
+        containerEl.style.maxHeight = `${window.innerHeight - topbarHeight - headerEl.offsetHeight - 20}px`;
+    } else {
+        isCommentSticky.value = false;
+        containerEl.style.maxHeight = 'none';
+    }
 };
 
 // klik global: jangan tutup saat klik di tombol atau dropdown (cek kelas)
 const onWindowClick = (e: any) => {
-  // safety: jika e.target tidak ada closest, keluar
-  try {
-    if ((e.target as Element).closest && (e.target as Element).closest('.menu-dropdown')) return;
-    if ((e.target as Element).closest && (e.target as Element).closest('.menu-btn')) return;
-  } catch (err) {
-    // ignore
-  }
-  closeMenu();
+    // safety: jika e.target tidak ada close, keluar
+    try {
+        if ((e.target as Element).closest && (e.target as Element).closest('.menu-dropdown')) return;
+        if ((e.target as Element).closest && (e.target as Element).closest('.menu-btn')) return;
+    } catch (_e) {
+        // ignore
+    }
+    closeMenu();
 };
 
 onMounted(() => {
-  window.addEventListener('scroll', onScroll);
-  window.addEventListener('click', onWindowClick);
+    window.addEventListener('scroll', onScroll);
+    window.addEventListener('click', onWindowClick);
 
-  // panggil fetchComments di mount
-  fetchComments();
+    // panggil fetchComments di mount
+    fetchComments();
 });
 
 onUnmounted(() => {
-  window.removeEventListener('scroll', onScroll);
-  window.removeEventListener('click', onWindowClick);
+    window.removeEventListener('scroll', onScroll);
+    window.removeEventListener('click', onWindowClick);
 });
 
 // ============================
 // COMMENT SYSTEM
 // ============================
-const comments = ref<CommentType[]>(props.comments ?? []);
-const newMessage = ref("");
+const comments = ref<CommentType[]>([]);
+const newMessage = ref('');
 
 // Ambil komentar
 const fetchComments = async () => {
     const res = await axios.get(`/subtasks/${props.subtask.id}/comments`);
-    
+
     // Backend kamu mengembalikan { comments: [...] }
     comments.value = res.data.comments ?? res.data;
 
@@ -201,15 +201,13 @@ const fetchComments = async () => {
     scrollToBottom();
 };
 
-
-
 // Modifikasi fungsi sendComment untuk menangani reply ID (jika backend mendukung)
 const sendComment = async () => {
     if (!newMessage.value.trim()) return;
 
     try {
-        const res = await axios.post(`/subtasks/${props.subtask.id}/comments`, {
-            type: "text",
+        await axios.post(`/subtasks/${props.subtask.id}/comments`, {
+            type: 'text',
             message: newMessage.value,
             parent_id: replyToId.value ?? null,
         });
@@ -218,7 +216,7 @@ const sendComment = async () => {
         // comments.value.push(res.data.comment ?? res.data);
 
         // Reset input + reply state *HANYA* jika request sukses
-        newMessage.value = "";
+        newMessage.value = '';
         replyToId.value = null;
         replyToUser.value = null;
         replyTo.value = null;
@@ -226,12 +224,11 @@ const sendComment = async () => {
         // refresh comments (atau gunakan pushing di atas)
         await fetchComments();
     } catch (error) {
-        console.error("Gagal mengirim komentar:", error);
+        console.error('Gagal mengirim komentar:', error);
         // Beri tahu user atau biarkan saja
-        alert("Gagal mengirim komentar. Coba lagi.");
+        alert('Gagal mengirim komentar. Coba lagi.');
     }
 };
-
 
 // ============================
 // MENU STATE
@@ -247,38 +244,36 @@ const closeMenu = () => {
 };
 
 onMounted(() => {
-    window.addEventListener("click", (e: any) => {
+    window.addEventListener('click', (e: any) => {
         // Jika klik di dalam menu dropdown → jangan tutup
-        if (e.target.closest(".menu-dropdown")) return;
+        if (e.target.closest('.menu-dropdown')) return;
 
         // Jika klik tombol titik 3 → jangan tutup
-        if (e.target.closest(".menu-btn")) return;
+        if (e.target.closest('.menu-btn')) return;
 
         // Selain itu → tutup
         closeMenu();
     });
 });
 onUnmounted(() => {
-    window.removeEventListener("click", closeMenu);
+    window.removeEventListener('click', closeMenu);
 });
-
 
 // ============================
 // 🌟 EDIT COMMENT STATE (LOGIKA PERBAIKAN) 🌟
 // ============================
 const isEditingComment = ref(false);
 const editingCommentId = ref<number | null>(null);
-const editingOldMessage = ref("");
+const editingOldMessage = ref('');
 // ⭐ VARIABEL BARU KHUSUS UNTUK EDIT
-const editedMessage = ref("");
-
+const editedMessage = ref('');
 
 // Mulai edit
 const startEditComment = (comment: CommentType) => {
     isEditingComment.value = true;
     editingCommentId.value = comment.id;
-    editingOldMessage.value = comment.message ?? "";
-    editedMessage.value = comment.message ?? ""; // Isi ke input edit
+    editingOldMessage.value = comment.message ?? '';
+    editedMessage.value = comment.message ?? ''; // Isi ke input edit
     activeMenuId.value = null; // Tutup menu setelah klik edit
 };
 
@@ -286,8 +281,8 @@ const startEditComment = (comment: CommentType) => {
 const cancelEdit = () => {
     isEditingComment.value = false;
     editingCommentId.value = null;
-    editingOldMessage.value = "";
-    editedMessage.value = "";
+    editingOldMessage.value = '';
+    editedMessage.value = '';
 };
 
 // Simpan edit
@@ -306,8 +301,8 @@ const saveEditedComment = async () => {
             edited: true,
         });
     } catch (error) {
-        console.error("Gagal menyimpan edit:", error);
-        alert("Gagal menyimpan perubahan. Coba lagi.");
+        console.error('Gagal menyimpan edit:', error);
+        alert('Gagal menyimpan perubahan. Coba lagi.');
     }
 
     cancelEdit();
@@ -319,20 +314,20 @@ const saveEditedComment = async () => {
 // ============================
 const deleteComment = async (commentId: number) => {
     // Konfirmasi penghapusan
-    if (!confirm("Are you sure you want to delete this comment?")) {
+    if (!confirm('Are you sure you want to delete this comment?')) {
         return;
     }
 
     try {
         // Kirim permintaan DELETE ke backend
         await axios.delete(`/comments/${commentId}`);
-        
+
         // Tutup menu dan refresh list komentar
         activeMenuId.value = null;
         await fetchComments();
     } catch (error) {
-        console.error("Failed to delete comment:", error);
-        alert("Gagal menghapus pesan. Coba lagi.");
+        console.error('Failed to delete comment:', error);
+        alert('Gagal menghapus pesan. Coba lagi.');
     }
 };
 
@@ -348,7 +343,7 @@ const triggerSuccessToast = () => {
     if (timeoutId !== null) {
         clearTimeout(timeoutId);
     }
-    
+
     // 2. Tampilkan notifikasi
     showCopySuccess.value = true;
 
@@ -358,7 +353,6 @@ const triggerSuccessToast = () => {
         timeoutId = null;
     }, 2000); // 2 detik
 };
-
 
 // ============================
 // 📋 COPY COMMENT LOGIC (Diubah)
@@ -372,12 +366,12 @@ const copyComment = async (message: string | null) => {
 
     try {
         await navigator.clipboard.writeText(message);
-        
-        // ❌ HAPUS: alert('Pesan berhasil disalin ke clipboard!'); 
-        
+
+        // ❌ HAPUS: alert('Pesan berhasil disalin ke clipboard!');
+
         // ✅ GANTI: Panggil toast yang baru
-        triggerSuccessToast(); 
-        
+        triggerSuccessToast();
+
         activeMenuId.value = null;
     } catch (err) {
         console.error('Gagal menyalin.', err);
@@ -396,7 +390,9 @@ const replyTo = ref<CommentType | null>(null);
 const startReply = (comment: CommentType) => {
     replyToId.value = comment.id;
     replyToUser.value = comment.user.name;
-    replyTo.value = comment;            // <-- penting
+    replyTo.value = comment; // <-- penting
+
+    console.log('Komentar yang di reply', comment);
 };
 
 const cancelReply = () => {
@@ -404,7 +400,6 @@ const cancelReply = () => {
     replyToUser.value = null;
     replyTo.value = null;
 };
-
 </script>
 
 <template>
@@ -513,64 +508,56 @@ const cancelReply = () => {
                 </p>
             </div>
 
-
-            <div class="mt-12 relative">
+            <div class="relative mt-12">
                 <h2
                     ref="commentHeaderRef"
-                    class="flex justify-center text-lg font-semibold text-[#033A63] dark:text-gray-100 sticky z-10 bg-white dark:bg-gray-800 py-2 border-b"
+                    class="sticky z-10 flex justify-center border-b bg-white py-2 text-lg font-semibold text-[#033A63] dark:bg-gray-800 dark:text-gray-100"
                     :style="{ top: isCommentSticky ? '70px' : 'auto' }"
                 >
                     💬 Komentar
                 </h2>
 
-                <div
-                    ref="commentContainerRef"
-                    class="space-y-2 p-2 overflow-y-auto transition-all duration-200"
-                >
-
+                <div ref="commentContainerRef" class="space-y-2 overflow-y-auto p-2 transition-all duration-200">
                     <div class="h-2"></div>
                     <div
                         v-for="(comment, index) in comments"
                         :key="comment.id"
                         class="flex flex-col gap-1"
+                        @contextmenu.prevent="startReply(comment)"
                     >
-                        <div
-                            v-if="shouldShowDateLabel(index)"
-                            class="text-center text-gray-800 text-xs my-3"
-                        >
+                        <div v-if="shouldShowDateLabel(index)" class="my-3 text-center text-xs text-gray-800">
                             {{ formatDateLabel(comment.created_at) }}
                         </div>
 
-                        <div
-                            class="flex gap-2"
-                            :class="comment.user_id === user.id ? 'justify-end' : 'justify-start'"
-                        >
+                        <div class="flex gap-2" :class="comment.user_id === user.id ? 'justify-end' : 'justify-start'">
                             <img
                                 v-if="comment.user_id !== user.id"
-                                :src="comment.user.avatar
-                                    ? `/storage/${comment.user.avatar}`
-                                    : `https://ui-avatars.com/api/?name=${comment.user.name}`"
-                                class="h-8 w-8 rounded-full shadow border"
+                                :src="
+                                    comment.user.avatar ? `/storage/${comment.user.avatar}` : `https://ui-avatars.com/api/?name=${comment.user.name}`
+                                "
+                                class="h-8 w-8 rounded-full border shadow"
                             />
 
-                            <div class="flex flex-col max-w-[70%]">
+                            <div class="flex max-w-[70%] flex-col">
                                 <span
                                     v-if="comment.user_id !== user.id"
-                                    class="text-[11px] font-semibold mb-1 text-left text-gray-700 dark:text-gray-300"
+                                    class="mb-1 text-left text-[11px] font-semibold text-gray-700 dark:text-gray-300"
                                 >
                                     {{ comment.user.name }}
                                 </span>
 
                                 <div
-                                    class="relative group px-2 pr-7 pb-4 py-2 rounded-xl shadow-md leading-relaxed w-fit min-w-[80px]"
+                                    class="group relative w-fit min-w-[80px] rounded-xl px-2 py-2 pr-7 pb-4 leading-relaxed shadow-md"
                                     :class="[
-                                        comment.user_id === user.id ? 'bg-[#055A99] text-white self-end' : 'bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-200 self-start',
-                                        comment.parent ? 'ml-6 border-l-4 border-blue-500 bg-blue-50 dark:bg-gray-800' : ''
+                                        comment.user_id === user.id
+                                            ? 'self-end bg-[#055A99] text-white'
+                                            : 'self-start bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-200',
+                                        comment.parent ? 'ml-6 border-l-4 border-blue-500 bg-blue-50 dark:bg-gray-800' : '',
                                     ]"
                                 >
                                     <!-- Titik 3 untuk menampilkan menu replay, copy, edit, dan hapus -->
                                     <button
-                                        class="menu-btn absolute top-1 text-gray-700 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                                        class="menu-btn absolute top-1 text-gray-700 opacity-0 transition-opacity duration-200 group-hover:opacity-100"
                                         :class="comment.user_id === user.id ? 'left-[-20px]' : 'right-[-20px]'"
                                         @click.stop="toggleMenu(comment.id)"
                                     >
@@ -579,36 +566,41 @@ const cancelReply = () => {
 
                                     <div
                                         v-if="activeMenuId === comment.id"
-                                        class="menu-dropdown absolute top-5 z-20 w-32 rounded-lg border bg-white shadow-md text-sm dark:bg-gray-800"
+                                        class="menu-dropdown absolute top-5 z-20 w-32 rounded-lg border bg-white text-sm shadow-md dark:bg-gray-800"
                                         :class="comment.user_id === user.id ? 'left-[-140px]' : 'right-[-140px]'"
                                         @click.stop
                                     >
                                         <!-- Menu user yang login -->
                                         <template v-if="comment.user_id === user.id">
-    
                                             <div
-                                                class="px-3 py-2 hover:bg-gray-100 cursor-pointer text-blue-500 dark:hover:bg-gray-700"
-                                                @click="startEditComment(comment); activeMenuId = null"
+                                                class="cursor-pointer px-3 py-2 text-blue-500 hover:bg-gray-100 dark:hover:bg-gray-700"
+                                                @click="
+                                                    startEditComment(comment);
+                                                    activeMenuId = null;
+                                                "
                                             >
                                                 Edit
                                             </div>
-    
-                                            <div 
-                                                class="px-3 py-2 hover:bg-gray-100 cursor-pointer text-red-500 dark:hover:bg-gray-700"
+
+                                            <div
+                                                class="cursor-pointer px-3 py-2 text-red-500 hover:bg-gray-100 dark:hover:bg-gray-700"
                                                 @click="deleteComment(comment.id)"
                                             >
                                                 Delete
                                             </div>
 
-                                            <div 
-                                                class="px-3 py-2 hover:bg-gray-100 cursor-pointer text-gray-700 dark:text-gray-300 dark:hover:bg-gray-700"
-                                                @click="startReply(comment); activeMenuId = null"
+                                            <div
+                                                class="cursor-pointer px-3 py-2 text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
+                                                @click="
+                                                    startReply(comment);
+                                                    activeMenuId = null;
+                                                "
                                             >
                                                 Reply
                                             </div>
-    
-                                            <div 
-                                                class="px-3 py-2 hover:bg-gray-100 cursor-pointer text-gray-700 dark:text-gray-300 dark:hover:bg-gray-700"
+
+                                            <div
+                                                class="cursor-pointer px-3 py-2 text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
                                                 @click="copyComment(comment.message)"
                                             >
                                                 Copy
@@ -616,16 +608,18 @@ const cancelReply = () => {
                                         </template>
                                         <!-- Menu User lain -->
                                         <template v-else>
-    
-                                            <div 
-                                                class="px-3 py-2 hover:bg-gray-100 cursor-pointer text-gray-700 dark:text-gray-300 dark:hover:bg-gray-700"
-                                                @click="startReply(comment); activeMenuId = null"
+                                            <div
+                                                class="cursor-pointer px-3 py-2 text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
+                                                @click="
+                                                    startReply(comment);
+                                                    activeMenuId = null;
+                                                "
                                             >
                                                 Reply
                                             </div>
 
-                                            <div 
-                                                class="px-3 py-2 hover:bg-gray-100 cursor-pointer text-gray-700 dark:text-gray-300 dark:hover:bg-gray-700"
+                                            <div
+                                                class="cursor-pointer px-3 py-2 text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
                                                 @click="copyComment(comment.message)"
                                             >
                                                 Copy
@@ -636,12 +630,12 @@ const cancelReply = () => {
                                     <!-- 🟦 REPLY BUBBLE (Jika comment ini adalah balasan)nah, iki sg ga kepanggil -->
                                     <div
                                         v-if="comment.parent"
-                                        class="mb-1 p-2 rounded-lg border-l-4 border-blue-500 bg-blue-50 dark:bg-gray-800 dark:border-blue-400"
+                                        class="mb-1 rounded-lg border-l-4 border-blue-500 bg-blue-50 p-2 dark:border-blue-400 dark:bg-gray-800"
                                     >
                                         <div class="text-xs font-semibold text-blue-700 dark:text-blue-300">
                                             Replying to {{ comment.parent.user.name }}
                                         </div>
-                                        <div class="text-xs text-gray-600 dark:text-gray-400 truncate">
+                                        <div class="truncate text-xs text-gray-600 dark:text-gray-400">
                                             {{ comment.parent.message }}
                                         </div>
                                     </div>
@@ -652,7 +646,7 @@ const cancelReply = () => {
                                     </div>
                                     <!-- Indikator setelah diedit -->
                                     <span
-                                        class="absolute bottom-1 right-2 text-[9px] flex items-center gap-1"
+                                        class="absolute right-2 bottom-1 flex items-center gap-1 text-[9px]"
                                         :class="comment.user_id === user.id ? 'text-gray-200' : 'text-gray-600'"
                                     >
                                         <span
@@ -675,16 +669,13 @@ const cancelReply = () => {
 
                 <!-- INPUT -->
                 <!-- Untuk mode edit -->
-                <div v-if="isEditingComment" class="w-full mt-4 border-t pt-4">
-                    <div class="flex justify-between items-center mb-1 p-1 rounded-t-lg bg-gray-100 dark:bg-gray-700">
-                        <span class="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                            Mengedit pesan...
-                        </span>
-                        <button @click="cancelEdit" class="text-gray-500 hover:text-red-600 font-bold text-lg leading-none p-1">
-                            &times; </button>
+                <div v-if="isEditingComment" class="mt-4 w-full border-t pt-4">
+                    <div class="mb-1 flex items-center justify-between rounded-t-lg bg-gray-100 p-1 dark:bg-gray-700">
+                        <span class="text-sm font-semibold text-gray-700 dark:text-gray-300"> Mengedit pesan... </span>
+                        <button @click="cancelEdit" class="p-1 text-lg leading-none font-bold text-gray-500 hover:text-red-600">&times;</button>
                     </div>
 
-                    <div class="flex gap-2 items-center w-full">
+                    <div class="flex w-full items-center gap-2">
                         <input
                             v-model="editedMessage"
                             class="flex-1 rounded-lg border px-3 py-2 dark:bg-black dark:text-white"
@@ -701,38 +692,33 @@ const cancelReply = () => {
                     </div>
                 </div>
 
-                <div v-else class="relative w-full mt-4 border-t pt-4">
+                <div v-else class="relative mt-4 w-full border-t pt-4">
                     <!-- Untuk notif copy berhasil -->
                     <Transition name="fade">
-                        <div 
+                        <div
                             v-if="showCopySuccess"
-                            class="absolute -top-10 left-1/2 -translate-x-1/2 p-2 px-4 rounded-lg bg-gray-200 text-gray-500 text-sm shadow-xl z-30 transition-opacity duration-300"
+                            class="absolute -top-10 left-1/2 z-30 -translate-x-1/2 rounded-lg bg-gray-200 p-2 px-4 text-sm text-gray-500 shadow-xl transition-opacity duration-300"
                         >
                             Pesan berhasil disalin ke clipboard!
                         </div>
                     </Transition>
 
                     <!-- ========== REPLY PREVIEW ABOVE INPUT ========== -->
-                    <div 
+                    <div
                         v-if="replyTo"
-                        class="mb-2 px-3 py-2 bg-gray-200 dark:bg-gray-700 rounded-lg flex justify-between items-start border-l-4 border-blue-500"
+                        class="mb-2 flex items-start justify-between rounded-lg border-l-4 border-blue-500 bg-gray-200 px-3 py-2 dark:bg-gray-700"
                     >
                         <div>
                             <p class="text-sm font-semibold">{{ replyTo.user.name }}</p>
-                            <p class="text-xs text-gray-600 dark:text-gray-300 line-clamp-1">
+                            <p class="line-clamp-1 text-xs text-gray-600 dark:text-gray-300">
                                 {{ replyTo.message }}
                             </p>
                         </div>
 
-                        <button 
-                            @click="cancelReply"
-                            class="text-gray-600 dark:text-gray-300 hover:text-red-500"
-                        >
-                            ✕
-                        </button>
+                        <button @click="cancelReply" class="text-gray-600 hover:text-red-500 dark:text-gray-300">✕</button>
                     </div>
 
-                    <div class="flex gap-2 items-center w-full"> 
+                    <div class="flex w-full items-center gap-2">
                         <input
                             id="new-message-input"
                             v-model="newMessage"
@@ -749,7 +735,6 @@ const cancelReply = () => {
                         </button>
                     </div>
                 </div>
-
             </div>
         </div>
     </AppLayout>

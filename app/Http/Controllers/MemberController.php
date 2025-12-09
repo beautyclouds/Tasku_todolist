@@ -18,6 +18,7 @@ class MemberController extends Controller
         $search = $request->query('search');
 
         // Ambil semua user kecuali yang sedang login, dan filter jika ada pencarian
+        $currentUser = Auth::user();
         $users = User::where('id', '!=', $currentUserId)
         ->when($search, function ($query, $search) {
                 $query->where(function ($q) use ($search) {
@@ -26,7 +27,7 @@ class MemberController extends Controller
                 });
             })
             ->get()
-            ->map(function ($user) use ($auth) {
+            ->map(function ($user) use ($currentUser) {
 
                 // ======================================================
                 // 🔍 CARI SHARED CARDS (owner + collaborator)
@@ -38,12 +39,12 @@ class MemberController extends Controller
                 $theirCards = $theirOwnerCards->merge($theirCollabCards)->unique();
 
                 // Card user yang login (owner + collaborator)
-                $myOwnerCards = $auth->myBoards()->pluck('id');
-                $myCollabCards = $auth->cards()->pluck('board_cards.id');
+                $myOwnerCards = $currentUser->myBoards()->pluck('id');
+                $myCollabCards = $currentUser->cards()->pluck('board_cards.id');
                 $myCards = $myOwnerCards->merge($myCollabCards)->unique();
 
                 // Ambil card yang sama-sama dikerjakan
-                $shared = \App\Models\BoardCard::whereIn('id', $theirCards)
+                $shared = BoardCard::whereIn('id', $theirCards)
                     ->whereIn('id', $myCards)
                     ->get()
                     ->map(function ($card) {

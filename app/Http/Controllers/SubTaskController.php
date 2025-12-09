@@ -15,10 +15,10 @@ class SubTaskController extends Controller
         $comments = $subtask->comments()
             ->with([
                 'user',
-                'replies.user',     // 🔥 ambil user yang reply
-                'replies.replies',  // 🔥 kalau mau support nested reply level 2+
+                'parent' => function ($query) {
+                    $query->select('id', 'user_id', 'message')->with('user:id,name');
+                },
             ])
-            ->whereNull('parent_id') // 🔥 komentar utama saja
             ->orderBy('created_at', 'asc')
             ->get();
 
