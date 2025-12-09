@@ -15,6 +15,7 @@ class Comment extends Model
         'type',
         'message',
         'file_path',
+        'parent_id',
     ];
 
     public function subtask()
@@ -26,4 +27,15 @@ class Comment extends Model
     {
         return $this->belongsTo(User::class);
     }
+
+    public function parent()
+    {
+        return $this->belongsTo(Comment::class, 'parent_id');
+    }
+
+    public function replies()
+    {
+        return $this->hasMany(Comment::class, 'parent_id');
+    }
+
 }

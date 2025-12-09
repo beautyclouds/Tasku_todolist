@@ -31,6 +31,14 @@ interface CommentType {
     file_path?: string | null;
     created_at: string;
     updated_at: string; 
+    parent_id?: number | null;
+
+    parent?: {
+        id: number;
+        user_id: number;
+        user: CommentUser;
+        message: string | null;
+    } | null;
 }
 
 // ============================
@@ -122,73 +130,108 @@ const formatTime = (dateStr: string) => {
 };
 
 // ============================
-// SCROLL CONTROL & STICKY HEADER
+// SCROLL CONTROL & STICKY HEADER + GLOBAL CLICK HANDLER
 // ============================
 const isCommentSticky = ref(false);
 const commentHeaderRef = ref<HTMLElement | null>(null);
 const commentContainerRef = ref<HTMLElement | null>(null);
 
 const scrollToBottom = () => {
-    const container = commentContainerRef.value;
-    if (container) {
-        container.scrollTop = container.scrollHeight;
-    }
+  const container = commentContainerRef.value;
+  if (container) container.scrollTop = container.scrollHeight;
+};
+
+// declare handlers in outer scope so we can add/remove the same reference
+const onScroll = () => {
+  const headerEl = commentHeaderRef.value;
+  const containerEl = commentContainerRef.value;
+  if (!headerEl || !containerEl) return;
+
+  const rect = headerEl.getBoundingClientRect();
+  const topbarHeight = 70; // tinggi topbar
+
+  if (rect.top <= topbarHeight) {
+    isCommentSticky.value = true;
+    containerEl.style.maxHeight = `${window.innerHeight - topbarHeight - headerEl.offsetHeight - 20}px`;
+  } else {
+    isCommentSticky.value = false;
+    containerEl.style.maxHeight = 'none';
+  }
+};
+
+// klik global: jangan tutup saat klik di tombol atau dropdown (cek kelas)
+const onWindowClick = (e: any) => {
+  // safety: jika e.target tidak ada closest, keluar
+  try {
+    if ((e.target as Element).closest && (e.target as Element).closest('.menu-dropdown')) return;
+    if ((e.target as Element).closest && (e.target as Element).closest('.menu-btn')) return;
+  } catch (err) {
+    // ignore
+  }
+  closeMenu();
 };
 
 onMounted(() => {
-    const onScroll = () => {
-        const headerEl = commentHeaderRef.value;
-        const containerEl = commentContainerRef.value;
-        if (!headerEl || !containerEl) return;
+  window.addEventListener('scroll', onScroll);
+  window.addEventListener('click', onWindowClick);
 
-        const rect = headerEl.getBoundingClientRect();
-        const topbarHeight = 70; // tinggi topbar
+  // panggil fetchComments di mount
+  fetchComments();
+});
 
-        if (rect.top <= topbarHeight) {
-            isCommentSticky.value = true;
-            containerEl.style.maxHeight = `${window.innerHeight - topbarHeight - headerEl.offsetHeight - 20}px`;
-        } else {
-            isCommentSticky.value = false;
-            containerEl.style.maxHeight = 'none';
-        }
-    };
-
-    window.addEventListener('scroll', onScroll);
-    onUnmounted(() => window.removeEventListener('scroll', onScroll));
-
-    // Panggil fetchComments saat mount
-    fetchComments();
+onUnmounted(() => {
+  window.removeEventListener('scroll', onScroll);
+  window.removeEventListener('click', onWindowClick);
 });
 
 // ============================
 // COMMENT SYSTEM
 // ============================
 const comments = ref<CommentType[]>(props.comments ?? []);
-// Digunakan HANYA untuk mengirim pesan BARU
 const newMessage = ref("");
 
 // Ambil komentar
 const fetchComments = async () => {
     const res = await axios.get(`/subtasks/${props.subtask.id}/comments`);
-    comments.value = res.data.comments;
+    
+    // Backend kamu mengembalikan { comments: [...] }
+    comments.value = res.data.comments ?? res.data;
 
-    nextTick(() => scrollToBottom());
+    await nextTick();
+    scrollToBottom();
 };
+
+
 
 // Modifikasi fungsi sendComment untuk menangani reply ID (jika backend mendukung)
 const sendComment = async () => {
     if (!newMessage.value.trim()) return;
 
-    // Payload hanya berisi 'type' dan 'message'
-    await axios.post(`/subtasks/${props.subtask.id}/comments`, {
-        type: "text",
-        message: newMessage.value,
-    });
+    try {
+        const res = await axios.post(`/subtasks/${props.subtask.id}/comments`, {
+            type: "text",
+            message: newMessage.value,
+            parent_id: replyToId.value ?? null,
+        });
 
-    newMessage.value = "";
-    // Tidak ada pemanggilan cancelReply()
-    await fetchComments();
+        // Opsional: kalau backend mereturn comment baru, kamu bisa push langsung
+        // comments.value.push(res.data.comment ?? res.data);
+
+        // Reset input + reply state *HANYA* jika request sukses
+        newMessage.value = "";
+        replyToId.value = null;
+        replyToUser.value = null;
+        replyTo.value = null;
+
+        // refresh comments (atau gunakan pushing di atas)
+        await fetchComments();
+    } catch (error) {
+        console.error("Gagal mengirim komentar:", error);
+        // Beri tahu user atau biarkan saja
+        alert("Gagal mengirim komentar. Coba lagi.");
+    }
 };
+
 
 // ============================
 // MENU STATE
@@ -204,7 +247,16 @@ const closeMenu = () => {
 };
 
 onMounted(() => {
-    window.addEventListener("click", closeMenu);
+    window.addEventListener("click", (e: any) => {
+        // Jika klik di dalam menu dropdown → jangan tutup
+        if (e.target.closest(".menu-dropdown")) return;
+
+        // Jika klik tombol titik 3 → jangan tutup
+        if (e.target.closest(".menu-btn")) return;
+
+        // Selain itu → tutup
+        closeMenu();
+    });
 });
 onUnmounted(() => {
     window.removeEventListener("click", closeMenu);
@@ -331,6 +383,26 @@ const copyComment = async (message: string | null) => {
         console.error('Gagal menyalin.', err);
         alert('Gagal menyalin pesan.');
     }
+};
+
+//=================
+// REPLAY COMMENT
+//=================
+
+const replyToId = ref<number | null>(null);
+const replyToUser = ref<string | null>(null);
+const replyTo = ref<CommentType | null>(null);
+
+const startReply = (comment: CommentType) => {
+    replyToId.value = comment.id;
+    replyToUser.value = comment.user.name;
+    replyTo.value = comment;            // <-- penting
+};
+
+const cancelReply = () => {
+    replyToId.value = null;
+    replyToUser.value = null;
+    replyTo.value = null;
 };
 
 </script>
@@ -491,12 +563,14 @@ const copyComment = async (message: string | null) => {
 
                                 <div
                                     class="relative group px-2 pr-7 pb-4 py-2 rounded-xl shadow-md leading-relaxed w-fit min-w-[80px]"
-                                    :class="comment.user_id === user.id
-                                        ? 'bg-[#055A99] text-white self-end'
-                                        : 'bg-gray-200 text-gray-800 self-start dark:bg-gray-700 dark:text-gray-200'"
+                                    :class="[
+                                        comment.user_id === user.id ? 'bg-[#055A99] text-white self-end' : 'bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-200 self-start',
+                                        comment.parent ? 'ml-6 border-l-4 border-blue-500 bg-blue-50 dark:bg-gray-800' : ''
+                                    ]"
                                 >
+                                    <!-- Titik 3 untuk menampilkan menu replay, copy, edit, dan hapus -->
                                     <button
-                                        class="absolute top-1 text-gray-700 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                                        class="menu-btn absolute top-1 text-gray-700 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
                                         :class="comment.user_id === user.id ? 'left-[-20px]' : 'right-[-20px]'"
                                         @click.stop="toggleMenu(comment.id)"
                                     >
@@ -505,10 +579,11 @@ const copyComment = async (message: string | null) => {
 
                                     <div
                                         v-if="activeMenuId === comment.id"
-                                        class="absolute top-5 z-20 w-32 rounded-lg border bg-white shadow-md text-sm dark:bg-gray-800"
+                                        class="menu-dropdown absolute top-5 z-20 w-32 rounded-lg border bg-white shadow-md text-sm dark:bg-gray-800"
                                         :class="comment.user_id === user.id ? 'left-[-140px]' : 'right-[-140px]'"
                                         @click.stop
                                     >
+                                        <!-- Menu user yang login -->
                                         <template v-if="comment.user_id === user.id">
     
                                             <div
@@ -527,6 +602,7 @@ const copyComment = async (message: string | null) => {
 
                                             <div 
                                                 class="px-3 py-2 hover:bg-gray-100 cursor-pointer text-gray-700 dark:text-gray-300 dark:hover:bg-gray-700"
+                                                @click="startReply(comment); activeMenuId = null"
                                             >
                                                 Reply
                                             </div>
@@ -538,11 +614,12 @@ const copyComment = async (message: string | null) => {
                                                 Copy
                                             </div>
                                         </template>
-
+                                        <!-- Menu User lain -->
                                         <template v-else>
     
                                             <div 
                                                 class="px-3 py-2 hover:bg-gray-100 cursor-pointer text-gray-700 dark:text-gray-300 dark:hover:bg-gray-700"
+                                                @click="startReply(comment); activeMenuId = null"
                                             >
                                                 Reply
                                             </div>
@@ -556,10 +633,24 @@ const copyComment = async (message: string | null) => {
                                         </template>
                                     </div>
 
-                                    <div class="flex items-end gap-1">
-                                        <span>{{ comment.message }}</span>
+                                    <!-- 🟦 REPLY BUBBLE (Jika comment ini adalah balasan)nah, iki sg ga kepanggil -->
+                                    <div
+                                        v-if="comment.parent"
+                                        class="mb-1 p-2 rounded-lg border-l-4 border-blue-500 bg-blue-50 dark:bg-gray-800 dark:border-blue-400"
+                                    >
+                                        <div class="text-xs font-semibold text-blue-700 dark:text-blue-300">
+                                            Replying to {{ comment.parent.user.name }}
+                                        </div>
+                                        <div class="text-xs text-gray-600 dark:text-gray-400 truncate">
+                                            {{ comment.parent.message }}
+                                        </div>
                                     </div>
 
+                                    <!-- ========== MESSAGE CONTENT ========== -->
+                                    <div class="whitespace-pre-wrap">
+                                        <span>{{ comment.message }}</span>
+                                    </div>
+                                    <!-- Indikator setelah diedit -->
                                     <span
                                         class="absolute bottom-1 right-2 text-[9px] flex items-center gap-1"
                                         :class="comment.user_id === user.id ? 'text-gray-200' : 'text-gray-600'"
@@ -582,6 +673,8 @@ const copyComment = async (message: string | null) => {
                     </div>
                 </div>
 
+                <!-- INPUT -->
+                <!-- Untuk mode edit -->
                 <div v-if="isEditingComment" class="w-full mt-4 border-t pt-4">
                     <div class="flex justify-between items-center mb-1 p-1 rounded-t-lg bg-gray-100 dark:bg-gray-700">
                         <span class="text-sm font-semibold text-gray-700 dark:text-gray-300">
@@ -609,7 +702,7 @@ const copyComment = async (message: string | null) => {
                 </div>
 
                 <div v-else class="relative w-full mt-4 border-t pt-4">
-    
+                    <!-- Untuk notif copy berhasil -->
                     <Transition name="fade">
                         <div 
                             v-if="showCopySuccess"
@@ -618,6 +711,26 @@ const copyComment = async (message: string | null) => {
                             Pesan berhasil disalin ke clipboard!
                         </div>
                     </Transition>
+
+                    <!-- ========== REPLY PREVIEW ABOVE INPUT ========== -->
+                    <div 
+                        v-if="replyTo"
+                        class="mb-2 px-3 py-2 bg-gray-200 dark:bg-gray-700 rounded-lg flex justify-between items-start border-l-4 border-blue-500"
+                    >
+                        <div>
+                            <p class="text-sm font-semibold">{{ replyTo.user.name }}</p>
+                            <p class="text-xs text-gray-600 dark:text-gray-300 line-clamp-1">
+                                {{ replyTo.message }}
+                            </p>
+                        </div>
+
+                        <button 
+                            @click="cancelReply"
+                            class="text-gray-600 dark:text-gray-300 hover:text-red-500"
+                        >
+                            ✕
+                        </button>
+                    </div>
 
                     <div class="flex gap-2 items-center w-full"> 
                         <input

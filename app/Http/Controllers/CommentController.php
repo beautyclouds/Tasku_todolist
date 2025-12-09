@@ -28,6 +28,7 @@ class CommentController extends Controller
             'type' => 'required|string',
             'message' => 'nullable|string',
             'file_path' => 'nullable|string',
+            'parent_id' => 'nullable|integer|exists:comments,id', // ✅ penting
         ]);
 
         $comment = Comment::create([
@@ -36,13 +37,15 @@ class CommentController extends Controller
             'type' => $request->type,
             'message' => $request->message,
             'file_path' => $request->file_path,
+            'parent_id' => $request->parent_id, // ✅ penting
         ]);
 
         return response()->json([
             'message' => 'Comment added',
-            'comment' => $comment->load('user'),
+            'comment' => $comment->load('user', 'parent'), // boleh load parent juga
         ]);
     }
+
 
     public function update(Request $request, Comment $comment)
     {
