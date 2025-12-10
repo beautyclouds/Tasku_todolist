@@ -511,7 +511,7 @@ const cancelReply = () => {
             <div class="relative mt-12">
                 <h2
                     ref="commentHeaderRef"
-                    class="sticky z-10 flex justify-center border-b bg-white py-2 text-lg font-semibold text-[#033A63] dark:bg-gray-800 dark:text-gray-100"
+                    class="sticky z-10 flex justify-center border-b bg-white py-2 text-lg font-semibold text-[#033A63] rounded-lg dark:bg-black dark:text-gray-100"
                     :style="{ top: isCommentSticky ? '70px' : 'auto' }"
                 >
                     💬 Komentar
@@ -552,7 +552,7 @@ const cancelReply = () => {
                                         comment.user_id === user.id
                                             ? 'self-end bg-[#055A99] text-white'
                                             : 'self-start bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-200',
-                                        comment.parent ? 'ml-6 border-l-4 border-blue-500 bg-blue-50 dark:bg-gray-800' : '',
+                                        comment.parent ? ' bg-[#055A99] ' : '',
                                     ]"
                                 >
                                     <!-- Titik 3 untuk menampilkan menu replay, copy, edit, dan hapus -->
@@ -630,12 +630,15 @@ const cancelReply = () => {
                                     <!-- 🟦 REPLY BUBBLE (Jika comment ini adalah balasan)nah, iki sg ga kepanggil -->
                                     <div
                                         v-if="comment.parent"
-                                        class="mb-1 rounded-lg border-l-4 border-blue-500 bg-blue-50 p-2 dark:border-blue-400 dark:bg-gray-800"
+                                        class="mb-1 rounded-lg border-l-4  p-2"
+                                        :class="comment.user_id === user.id ? 'border-[#2D79B0] bg-[#72B1D5]' : 'border-gray-400 bg-gray-300 dark:border-gray-800 dark:bg-gray-500'"
                                     >
-                                        <div class="text-xs font-semibold text-blue-700 dark:text-blue-300">
+                                        <div class="text-xs font-semibold"
+                                            :class="comment.user_id === user.id ? 'text-[#205B83]' : 'text-gray-500 dark:text-gray-800'"
+                                        >
                                             Replying to {{ comment.parent.user.name }}
                                         </div>
-                                        <div class="truncate text-xs text-gray-600 dark:text-gray-400">
+                                        <div class="truncate text-xs text-gray-800 ">
                                             {{ comment.parent.message }}
                                         </div>
                                     </div>
@@ -647,7 +650,7 @@ const cancelReply = () => {
                                     <!-- Indikator setelah diedit -->
                                     <span
                                         class="absolute right-2 bottom-1 flex items-center gap-1 text-[9px]"
-                                        :class="comment.user_id === user.id ? 'text-gray-200' : 'text-gray-600'"
+                                        :class="comment.user_id === user.id ? 'text-gray-200' : 'text-gray-600 dark:text-gray-200'"
                                     >
                                         <span
                                             v-if="comment.updated_at !== comment.created_at"
