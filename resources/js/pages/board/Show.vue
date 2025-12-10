@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import AppLayout from '@/layouts/AppLayout.vue';
 import { Head, router, useForm } from '@inertiajs/vue3';
-import { computed, defineProps, ref } from 'vue';
+import { computed, ref } from 'vue';
 
 const props = defineProps<{
     card: {
