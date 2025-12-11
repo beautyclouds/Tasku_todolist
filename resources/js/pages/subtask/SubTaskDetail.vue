@@ -29,10 +29,12 @@ interface CommentType {
     user: CommentUser;
     message: string | null;
     file_path?: string | null;
+    file_name?: string | null;
+    file_type?: string | null;
+    file_size?: number | null;
     created_at: string;
     updated_at: string;
     parent_id?: number | null;
-
     parent?: {
         id: number;
         user_id: number;
@@ -203,32 +205,44 @@ const fetchComments = async () => {
 
 // Modifikasi fungsi sendComment untuk menangani reply ID (jika backend mendukung)
 const sendComment = async () => {
-    if (!newMessage.value.trim()) return;
+    // guard: but allow if selectedFile present
+    if (!newMessage.value.trim() && !selectedFile.value) return;
 
     try {
-        await axios.post(`/subtasks/${props.subtask.id}/comments`, {
-            type: 'text',
-            message: newMessage.value,
-            parent_id: replyToId.value ?? null,
-        });
+        if (selectedFile.value) {
+            const formData = new FormData();
+            formData.append('type', 'file');
+            formData.append('message', newMessage.value ?? '');
+            // parent_id may be number or null/undefined; append empty string if none
+            formData.append('parent_id', (replyToId.value ?? '') as unknown as string);
+            formData.append('file', selectedFile.value);
 
-        // Opsional: kalau backend mereturn comment baru, kamu bisa push langsung
-        // comments.value.push(res.data.comment ?? res.data);
+            await axios.post(`/subtasks/${props.subtask.id}/comments`, formData, {
+                headers: { 'Content-Type': 'multipart/form-data' },
+            });
+        } else {
+            await axios.post(`/subtasks/${props.subtask.id}/comments`, {
+                type: 'text',
+                message: newMessage.value,
+                parent_id: replyToId.value ?? null,
+            });
+        }
 
-        // Reset input + reply state *HANYA* jika request sukses
+        // reset
         newMessage.value = '';
+        removeSelectedFile();
+
         replyToId.value = null;
         replyToUser.value = null;
         replyTo.value = null;
 
-        // refresh comments (atau gunakan pushing di atas)
         await fetchComments();
-    } catch (error) {
-        console.error('Gagal mengirim komentar:', error);
-        // Beri tahu user atau biarkan saja
+    } catch (err) {
+        console.error('Gagal mengirim komentar:', err);
         alert('Gagal mengirim komentar. Coba lagi.');
     }
 };
+
 
 // ============================
 // MENU STATE
@@ -400,6 +414,70 @@ const cancelReply = () => {
     replyToUser.value = null;
     replyTo.value = null;
 };
+
+// ============================
+// UPLOAD FILE
+// ============================
+const selectedFile = ref<File | null>(null);
+const filePreviewUrl = ref<string | null>(null);
+
+const handleFileUpload = (event: Event) => {
+    const input = event.target as HTMLInputElement | null;
+    const file = input?.files?.[0] ?? null;
+    if (!file) {
+        selectedFile.value = null;
+        filePreviewUrl.value = null;
+        return;
+    }
+
+    selectedFile.value = file;
+    // create preview only for local previewing (image/video/audio)
+    // revoke previous object URL if any
+    if (filePreviewUrl.value) {
+        try { URL.revokeObjectURL(filePreviewUrl.value); } catch (_e) {}
+    }
+    filePreviewUrl.value = URL.createObjectURL(file);
+};
+
+const removeSelectedFile = () => {
+    selectedFile.value = null;
+    if (filePreviewUrl.value) {
+        try { URL.revokeObjectURL(filePreviewUrl.value); } catch (_e) {}
+    }
+    filePreviewUrl.value = null;
+};
+
+// -----------------------------
+// Utility checks used in template
+// -----------------------------
+const isLocalImageFile = (file?: File | null, mime?: string | null) => {
+    if (file) return file.type.startsWith('image/');
+    if (mime) return mime.startsWith('image/');
+    return false;
+};
+
+const isImageMime = (mime?: string | null) => {
+    return !!mime && mime.startsWith('image/');
+};
+
+const isVideoMime = (mime?: string | null) => {
+    return !!mime && mime.startsWith('video/');
+};
+
+const isAudioMime = (mime?: string | null) => {
+    return !!mime && mime.startsWith('audio/');
+};
+
+// -----------------------------
+// Helper to format file size (used in template)
+// -----------------------------
+const formatFileSize = (bytes?: number | null) => {
+    if (!bytes && bytes !== 0) return '';
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+};
+
 </script>
 
 <template>
@@ -638,15 +716,70 @@ const cancelReply = () => {
                                         >
                                             Replying to {{ comment.parent.user.name }}
                                         </div>
+
                                         <div class="truncate text-xs text-gray-800 ">
                                             {{ comment.parent.message }}
                                         </div>
+                                    </div>
+
+                                    <!-- ========== FILE PREVIEW ========== -->
+                                    <div v-if="comment.file_path" class="mt-2">
+
+                                        <!-- Jika FILE adalah gambar -->
+                                        <img
+                                            v-if="(comment.file_type?.startsWith('image/') ?? false)"
+                                            :src="`/storage/${comment.file_path}`"
+                                            class="max-h-60 rounded-lg border shadow"
+                                        />
+
+                                        <!-- Jika FILE adalah video -->
+                                        <video
+                                            v-else-if="(comment.file_type?.startsWith('video/') ?? false)"
+                                            controls
+                                            class="max-h-60 rounded-lg shadow"
+                                        >
+                                            <source :src="`/storage/${comment.file_path}`" :type="comment.file_type ?? ''" />
+                                            Browser anda tidak mendukung video.
+                                        </video>
+
+                                        <!-- Jika FILE adalah audio -->
+                                        <audio
+                                            v-else-if="(comment.file_type?.startsWith('audio/') ?? false)"
+                                            controls
+                                            class="w-full mt-2"
+                                        >
+                                            <source :src="`/storage/${comment.file_path}`" :type="comment.file_type ?? ''" />
+                                        </audio>
+
+                                        <!-- Jika PDF -->
+                                        <a
+                                            v-else-if="comment.file_type === 'application/pdf'"
+                                            :href="`/storage/${comment.file_path}`"
+                                            target="_blank"
+                                            class="flex items-center gap-2 mt-1 underline"
+                                            :class="comment.user_id === user.id ? 'text-gray-200' : 'text-gray-600'"
+                                        >
+                                            📄 {{ comment.file_name }}
+                                        </a>
+
+                                        <!-- File lainnya (ZIP, DOCX, DLL) -->
+                                        <a
+                                            v-else
+                                            :href="`/storage/${comment.file_path}`"
+                                            target="_blank"
+                                            class="flex items-center gap-2 mt-1  underline"
+                                            :class="comment.user_id === user.id ? 'text-gray-200' : 'text-gray-600'"
+                                        >
+                                            📎 Download {{ comment.file_name }}
+                                        </a>
                                     </div>
 
                                     <!-- ========== MESSAGE CONTENT ========== -->
                                     <div class="whitespace-pre-wrap">
                                         <span>{{ comment.message }}</span>
                                     </div>
+
+
                                     <!-- Indikator setelah diedit -->
                                     <span
                                         class="absolute right-2 bottom-1 flex items-center gap-1 text-[9px]"
@@ -721,7 +854,22 @@ const cancelReply = () => {
                         <button @click="cancelReply" class="text-gray-600 hover:text-red-500 dark:text-gray-300">✕</button>
                     </div>
 
+                    <!-- ========== FILE PREVIEW (BARU) ========== -->
+                    <div v-if="selectedFile" class="mb-2 rounded-lg bg-gray-100 p-2 dark:bg-gray-700">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-semibold text-gray-700 dark:text-gray-300">
+                                {{ selectedFile.name }} ({{ (selectedFile.size / 1024).toFixed(1) }} KB)
+                            </span>
+
+                            <button @click="removeSelectedFile" class="text-red-500 hover:text-red-700 text-sm">
+                                ✕
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- INPUT BAR -->
                     <div class="flex w-full items-center gap-2">
+                        <!-- TEXT INPUT -->
                         <input
                             id="new-message-input"
                             v-model="newMessage"
@@ -729,10 +877,23 @@ const cancelReply = () => {
                             @keyup.enter="sendComment"
                             placeholder="Tulis komentar baru..."
                         />
+                        <!-- Tombol upload -->
+                        <label
+                            for="file-input"
+                            class="cursor-pointer rounded-lg bg-gray-200 px-3 py-2 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600"
+                        >
+        📎
+                        </label>
+                        <input
+                            id="file-input"
+                            type="file"
+                            class="hidden"
+                            @change="handleFileUpload"
+                        />
                         <button
                             @click="sendComment"
                             class="rounded-lg bg-[#033A63] px-4 py-2 text-white hover:bg-[#055A99] disabled:bg-[#3B8BC9]"
-                            :disabled="!newMessage.trim()"
+                            :disabled="!newMessage.trim() && !selectedFile"
                         >
                             Send
                         </button>
