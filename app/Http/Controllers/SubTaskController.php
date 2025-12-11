@@ -44,4 +44,16 @@ class SubTaskController extends Controller
         return back()->with('success', 'Subtask updated successfully.');
     }
 
+    public function close(SubTask $subtask)
+    {
+        $subtask->update([
+            'is_close' => true,
+        ]);
+
+        // Redirect ke halaman detail card
+        return redirect()->route('board.show', $subtask->board_card_id)
+                         ->with('success', 'Subtask berhasil ditutup!');
+    }
+
+
 }

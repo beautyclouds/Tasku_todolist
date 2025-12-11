@@ -13,6 +13,7 @@ class SubTask extends Model
         'description',
         'is_done',
         'card_id',
+        'is_close',
     ];
 
     public function card()

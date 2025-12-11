@@ -270,4 +270,15 @@ class BoardController extends Controller
         return redirect()->route('board.index')->with('success', 'You left the card.');
     }
 
+    public function deleteTask($taskId)
+    {
+        $task = SubTask::findOrFail($taskId);
+        $cardId = $task->board_card_id; // simpan dulu id card sebelum dihapus
+        $task->delete();
+
+        // Redirect ke halaman detail card
+        return redirect()->route('board.show', $cardId)
+                         ->with('success', 'Subtask berhasil dihapus!');
+    }
+
 }
