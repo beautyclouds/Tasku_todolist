@@ -22,7 +22,10 @@ class BoardController extends Controller
 
         // My Boards = card buatan user TANPA collaborator
         $myBoardsQuery = $user->myBoards()
-            ->with(['user', 'collaborators', 'tasks'])
+            ->with([
+                'user',
+                'collaborators',
+                'tasks'])
             ->whereNull('closed_at')
             ->whereDoesntHave('collaborators') // card buatan sendiri tapi tidak punya anggota lain
             ->orderBy('created_at', 'desc');

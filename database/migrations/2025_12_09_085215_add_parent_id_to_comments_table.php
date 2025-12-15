@@ -6,25 +6,22 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
-    public function up()
+    public function up(): void
     {
         Schema::table('comments', function (Blueprint $table) {
-            $table->unsignedBigInteger('parent_id')->nullable()->after('user_id');
-            $table->foreign('parent_id')->references('id')->on('comments')->onDelete('cascade');
+            // Tambahkan kolom parent_id
+            $table->foreignId('parent_id')
+                ->nullable() // ⭐ PENTING: harus nullable kalau bukan reply utama
+                ->constrained('comments') // Mengacu ke tabel comments itu sendiri
+                ->onDelete('cascade');
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
-    public function down()
+    public function down(): void
     {
         Schema::table('comments', function (Blueprint $table) {
-            $table->dropForeign(['parent_id']);
-            $table->dropColumn('parent_id');
+            $table->dropForeign(['parent_id']); // Hapus foreign key
+            $table->dropColumn('parent_id');   // Hapus kolom
         });
     }
 };

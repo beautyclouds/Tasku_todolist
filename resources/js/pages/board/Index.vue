@@ -4,6 +4,23 @@ import { type BreadcrumbItem } from '@/types';
 import { Head, router } from '@inertiajs/vue3';
 import { computed, defineProps, ref, watch } from 'vue';
 
+/**
+ * Menghitung total komentar yang belum dibaca dari semua SubTask dalam satu Board Card.
+ * @param {Array} tasks - Array SubTask (card.tasks)
+ * @returns {number}
+ */
+const totalUnreadComments = (tasks) => {
+    if (!tasks || tasks.length === 0) {
+        return 0;
+    }
+
+    // Menggunakan reduce untuk menjumlahkan properti unread_comments_count dari setiap task
+    return tasks.reduce((total, task) => {
+        // Pastikan task.unread_comments_count itu angka dan bukan null/undefined
+        return total + (task.unread_comments_count || 0);
+    }, 0);
+};
+
 const breadcrumbs: BreadcrumbItem[] = [{ title: 'Board', href: '/board' }];
 
 const props = defineProps<{
@@ -27,7 +44,7 @@ watch(search, (val) => {
             {
                 preserveState: true,
                 replace: true,
-            }
+            },
         );
     }, 400);
 });
@@ -35,28 +52,28 @@ watch(search, (val) => {
 // ✅ fungsi untuk reset pencarian
 const resetSearch = () => {
     search.value = '';
-    router.get(route('board.index'), {}, {
-        preserveState: false,
-        replace: true,
-    });
+    router.get(
+        route('board.index'),
+        {},
+        {
+            preserveState: false,
+            replace: true,
+        },
+    );
 };
 
 // computed arrays (my boards)
-const pendingTasks = computed(() =>
-    props.myBoards.filter(c => c.status === 'Pending')
-);
+const pendingTasks = computed(() => props.myBoards.filter((c) => c.status === 'Pending'));
 const onProgressTasks = computed(() =>
     props.myBoards
-        .filter(c => c.status === 'In Progress')
+        .filter((c) => c.status === 'In Progress')
         .sort((a, b) => {
             if (a.is_revised && !b.is_revised) return -1;
             if (!a.is_revised && b.is_revised) return 1;
             return b.id - a.id;
-        })
+        }),
 );
-const completedTasks = computed(() =>
-    props.myBoards.filter(c => c.status === 'Completed')
-);
+const completedTasks = computed(() => props.myBoards.filter((c) => c.status === 'Completed'));
 
 const showModal = ref(false);
 const isEditing = ref(false);
@@ -136,22 +153,26 @@ const getSubtasks = (task: any): NormalizedSubtask[] => {
 const toggleSubtask = (card: any, subtask: NormalizedSubtask) => {
     subtask.is_completed = !subtask.is_completed;
 
-    const normalized = getSubtasks(card).map(s => ({
+    const normalized = getSubtasks(card).map((s) => ({
         id: s.id,
         is_completed: s.is_completed,
     }));
 
     router.put(`/board/${card.id}/subtasks`, {
-        subtasks: normalized
+        subtasks: normalized,
     });
 };
 
 function closeCard(id: number) {
-  if (confirm("Apakah kamu yakin ingin menutup card ini?")) {
-    router.put(`/board/${id}/close`, {}, {
-      onSuccess: () => router.reload()
-    });
-  }
+    if (confirm('Apakah kamu yakin ingin menutup card ini?')) {
+        router.put(
+            `/board/${id}/close`,
+            {},
+            {
+                onSuccess: () => router.reload(),
+            },
+        );
+    }
 }
 </script>
 
@@ -190,9 +211,24 @@ function closeCard(id: number) {
                 <template
                     v-for="(section, index) in [
                         { label: '🟤 Pending (My Boards)', items: pendingTasks, color: 'text-gray-700', bg: 'bg-orange-100 dark:bg-orange-200/30' },
-                        { label: '🟡 In Progress (My Boards)', items: onProgressTasks, color: 'text-yellow-600', bg: 'bg-yellow-100 dark:bg-yellow-200/30' },
-                        { label: '🟢 Completed (My Boards)', items: completedTasks, color: 'text-green-600', bg: 'bg-green-100 dark:bg-green-200/30' },
-                        { label: '🔵 Collaboration', items: props.collaborationBoards, color: 'text-blue-600', bg: 'bg-blue-100 dark:bg-blue-200/30' },
+                        {
+                            label: '🟡 In Progress (My Boards)',
+                            items: onProgressTasks,
+                            color: 'text-yellow-600',
+                            bg: 'bg-yellow-100 dark:bg-yellow-200/30',
+                        },
+                        {
+                            label: '🟢 Completed (My Boards)',
+                            items: completedTasks,
+                            color: 'text-green-600',
+                            bg: 'bg-green-100 dark:bg-green-200/30',
+                        },
+                        {
+                            label: '🔵 Collaboration',
+                            items: props.collaborationBoards,
+                            color: 'text-blue-600',
+                            bg: 'bg-blue-100 dark:bg-blue-200/30',
+                        },
                     ]"
                     :key="index"
                 >
@@ -205,38 +241,51 @@ function closeCard(id: number) {
                             <div
                                 v-for="task in section.items"
                                 :key="task.id"
-                                class="relative hover:bg-opacity-80 rounded-md p-3 shadow-sm transition"
+                                class="hover:bg-opacity-80 relative rounded-md p-3 shadow-sm transition"
                                 :class="section.bg"
                             >
                                 <!-- Badge Revisi -->
-                                <span
-                                    v-if="task.is_revised"
-                                    class="absolute top-2 right-2 bg-red-200 text-red-700 text-[10px] font-semibold px-2 py-0.5 rounded-full shadow"
-                                >
-                                    Revisi
-                                </span>
+                                <div class="absolute top-2 right-2 flex gap-1">
+                                    <span
+                                        v-if="totalUnreadComments(task.tasks) > 0"
+                                        class="flex items-center rounded-full bg-red-500 px-2 py-0.5 text-xs font-medium text-white shadow-md"
+                                    >
+                                        {{ totalUnreadComments(task.tasks) }}
+                                    </span>
 
-                                <span
-                                    v-else-if="section.label.includes('Collaboration')"
-                                    :class="[ 'absolute top-2 right-2 text-[10px] font-semibold px-2 py-0.5 rounded-full shadow',
-                                        task.status === 'Pending' && 'bg-orange-200 text-orange-700',
-                                        task.status === 'In Progress' && 'bg-yellow-200 text-yellow-700',
-                                        task.status === 'Completed' && 'bg-green-200 text-green-700' ]"
-                                >
-                                    {{ task.status }}
-                                </span>
+                                    <span
+                                        v-if="task.is_revised"
+                                        class="rounded-full bg-red-200 px-2 py-0.5 text-[10px] font-semibold text-red-700 shadow"
+                                    >
+                                        Revisi
+                                    </span>
 
-                                <p 
-                                  class="mb-2 cursor-pointer font-semibold dark:text-gray-100 whitespace-nowrap overflow-hidden text-ellipsis" 
-                                  @click="goToCard(task.id)">
-                                    {{ task.title }}
-                                </p>
+                                    <span
+                                        v-else-if="section.label.includes('Collaboration')"
+                                        :class="[
+                                            'rounded-full px-2 py-0.5 text-[10px] font-semibold shadow',
+                                            task.status === 'Pending' && 'bg-orange-200 text-orange-700',
+                                            task.status === 'In Progress' && 'bg-yellow-200 text-yellow-700',
+                                            task.status === 'Completed' && 'bg-green-200 text-green-700',
+                                        ]"
+                                    >
+                                        {{ task.status }}
+                                    </span>
+                                </div>
+                                <div class="mb-2 flex items-center justify-between">
+                                    <p
+                                        class="cursor-pointer overflow-hidden font-semibold text-ellipsis whitespace-nowrap dark:text-gray-100"
+                                        @click="goToCard(task.id)"
+                                    >
+                                        {{ task.title }}
+                                    </p>
+                                </div>
 
                                 <!-- Subtasks -->
-                                <ul v-if="getSubtasks(task).length" class="mb-2 text-xs space-y-1">
+                                <ul v-if="getSubtasks(task).length" class="mb-2 space-y-1 text-xs">
                                     <li v-for="sub in getSubtasks(task)" :key="sub.id" class="flex items-center gap-2">
-                                        <input type="checkbox" :checked="sub.is_completed" @change="toggleSubtask(task, sub)" disabled/>
-                                        <span :class="{ 'line-through text-gray-400': sub.is_completed }">
+                                        <input type="checkbox" :checked="sub.is_completed" @change="toggleSubtask(task, sub)" disabled />
+                                        <span :class="{ 'text-gray-400 line-through': sub.is_completed }">
                                             {{ sub.title }}
                                         </span>
                                     </li>
@@ -249,7 +298,11 @@ function closeCard(id: number) {
                                         <img
                                             v-for="collaborator in task.collaborators"
                                             :key="collaborator.id"
-                                            :src="collaborator.photo ? `/storage/${collaborator.photo}` : `https://ui-avatars.com/api/?name=${collaborator.name}`"
+                                            :src="
+                                                collaborator.photo
+                                                    ? `/storage/${collaborator.photo}`
+                                                    : `https://ui-avatars.com/api/?name=${collaborator.name}`
+                                            "
                                             :alt="collaborator.name"
                                             class="h-6 w-6 rounded-full border-2 border-white object-cover shadow dark:border-gray-700"
                                         />
@@ -295,23 +348,14 @@ function closeCard(id: number) {
             </div>
 
             <!-- ⬇️ TARUH MODAL DI SINI -->
-            <div
-                v-if="showModal"
-                class="bg-opacity-50 fixed inset-0 z-50 flex items-center justify-center bg-black"
-            >
-                <div
-                    class="w-full max-w-md rounded-xl bg-white p-6 shadow-lg dark:bg-gray-800 dark:text-white"
-                >
+            <div v-if="showModal" class="bg-opacity-50 fixed inset-0 z-50 flex items-center justify-center bg-black">
+                <div class="w-full max-w-md rounded-xl bg-white p-6 shadow-lg dark:bg-gray-800 dark:text-white">
                     <h2 class="mb-4 text-lg font-semibold text-[#033A63] dark:text-gray-200">
                         {{ isEditing ? 'Edit Card' : 'Create New Board' }}
                     </h2>
 
                     <div class="space-y-3">
-                        <label
-                            class="block text-sm font-medium text-gray-700 dark:text-gray-300"
-                        >
-                            Judul
-                        </label>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300"> Judul </label>
                         <input
                             v-model="newCard.title"
                             type="text"
@@ -319,22 +363,14 @@ function closeCard(id: number) {
                             class="w-full rounded border px-3 py-2 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400"
                         />
 
-                        <label
-                            class="block text-sm font-medium text-gray-700 dark:text-gray-300"
-                        >
-                            Deadline
-                        </label>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300"> Deadline </label>
                         <input
                             v-model="newCard.deadline"
                             type="datetime-local"
                             class="w-full rounded border px-3 py-2 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
                         />
 
-                        <label
-                            class="block text-sm font-medium text-gray-700 dark:text-gray-300"
-                        >
-                            Status Prioritas
-                        </label>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300"> Status Prioritas </label>
                         <select
                             v-model="newCard.priority"
                             class="w-full rounded border px-3 py-2 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
@@ -355,7 +391,7 @@ function closeCard(id: number) {
                         <button
                             @click="submitCard"
                             :disabled="!isFormValid"
-                            class="rounded bg-[#033A63] px-4 py-2 text-white disabled:cursor-not-allowed disabled:opacity-50 dark:bg-gray-00 dark:hover:bg-gray-500"
+                            class="dark:bg-gray-00 rounded bg-[#033A63] px-4 py-2 text-white disabled:cursor-not-allowed disabled:opacity-50 dark:hover:bg-gray-500"
                         >
                             {{ isEditing ? 'Update' : 'Save' }}
                         </button>

@@ -2,6 +2,7 @@
 import AppLayout from '@/layouts/AppLayout.vue';
 import { Head, router, usePage } from '@inertiajs/vue3';
 import axios from 'axios';
+import dayjs from 'dayjs';
 import { nextTick, onMounted, onUnmounted, ref } from 'vue';
 
 // ============================
@@ -12,7 +13,38 @@ const props = defineProps<{
     card: any;
     collaborators: any[];
     // comments: any[];
+    currentUserLastRead: string | null;
 }>();
+
+const unreadCount = ref(props.subtask.unread_comments_count || 0);
+
+let isNewCommentsSectionFound = false;
+
+/**
+ * Menentukan apakah garis pemisah "Komentar Baru" harus ditampilkan di atas komentar ini.
+ * Garis hanya ditampilkan sekali, di atas komentar pertama yang dibuat SETELAH last_read_at user.
+ * @param {string} commentCreatedAt - Timestamp comment.created_at
+ * @returns {boolean}
+ */
+
+const shouldShowNewCommentDivider = (commentCreatedAt: string) => {
+    // Jika belum pernah dibaca (lastRead null) atau lastRead sudah ketemu, jangan tampilkan lagi.
+    if (isNewCommentsSectionFound || !props.currentUserLastRead) {
+        return false;
+    }
+
+    // Ubah string ke Dayjs object (pastikan kamu pakai dayjs)
+    const commentTime = dayjs(commentCreatedAt);
+    const lastReadTime = dayjs(props.currentUserLastRead);
+
+    // Cek: Apakah waktu komentar ini LEBIH BARU dari waktu terakhir dibaca?
+    if (commentTime.isAfter(lastReadTime)) {
+        isNewCommentsSectionFound = true; // Tandai sudah ketemu
+        return true; // Tampilkan divider
+    }
+
+    return false;
+};
 
 // ============================
 // TIPE DATA COMMENT
@@ -190,12 +222,35 @@ onUnmounted(() => {
 const comments = ref<CommentType[]>([]);
 const newMessage = ref('');
 
-// Ambil komentar
 const fetchComments = async () => {
+    // 1. Ambil Komen
     const res = await axios.get(`/subtasks/${props.subtask.id}/comments`);
+    comments.value = res.data.comments ?? res.data; // Sesuaikan jika backend returnnya di array/object lain
 
-    // Backend kamu mengembalikan { comments: [...] }
-    comments.value = res.data.comments ?? res.data;
+    // 2. Tandai Subtask sebagai Sudah Dibaca (Mark as Read)
+    try {
+        await axios.post(`/subtask/${props.subtask.id}/mark-read`);
+        // ⭐ TAMBAHKAN INI: Update counter setelah mark-read sukses
+        unreadCount.value = 0;
+    } catch (e) {
+        console.error('Gagal menandai sebagai terbaca:', e);
+    }
+
+    comments.value.forEach((comment) => {
+        if (comment.parent_id && !comment.parent) {
+            // Cari komentar dengan ID yang sama dengan parent_id
+            const parentComment = comments.value.find((c) => c.id === comment.parent_id);
+            if (parentComment) {
+                // Isi properti parent di komen ini
+                comment.parent = {
+                    id: parentComment.id,
+                    user_id: parentComment.user_id,
+                    user: parentComment.user,
+                    message: parentComment.message,
+                };
+            }
+        }
+    });
 
     await nextTick();
     scrollToBottom();
@@ -416,15 +471,26 @@ const cancelReply = () => {
                     <h1 class="text-xl font-bold text-[#033A63] dark:text-gray-200">📋 {{ props.card.title }}</h1>
                 </div>
 
-                <div class="flex justify-end">
+                <div class="flex justify-end gap-2">
                     <button
-                        v-if="!isEditing"
+                        v-if="!isEditing && !isSubtaskClosed"
+                        @click="closeSubtask"
+                        class="rounded-lg bg-red-600 px-4 py-2 text-sm text-white hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-800"
+                        title="Close Subtask"
+                    >
+                        Close
+                    </button>
+
+                    <button
+                        v-if="!isEditing && !isSubtaskClosed"
                         @click="isEditing = true"
                         class="rounded-lg bg-[#033A63] px-4 py-2 text-lg text-sm text-white hover:bg-blue-800 dark:bg-black dark:hover:bg-gray-600"
                         title="Edit"
                     >
                         Edit
                     </button>
+
+                    <span v-if="isSubtaskClosed" class="rounded-lg bg-gray-600 px-4 py-2 text-sm text-white dark:bg-gray-700"> CLOSED </span>
                 </div>
             </div>
 
@@ -511,10 +577,16 @@ const cancelReply = () => {
             <div class="relative mt-12">
                 <h2
                     ref="commentHeaderRef"
-                    class="sticky z-10 flex justify-center border-b bg-white py-2 text-lg font-semibold text-[#033A63] rounded-lg dark:bg-black dark:text-gray-100"
+                    class="sticky z-10 flex items-center justify-center rounded-lg border-b bg-white py-2 text-lg font-semibold text-[#033A63] dark:bg-black dark:text-gray-100"
                     :style="{ top: isCommentSticky ? '70px' : 'auto' }"
                 >
-                    💬 Komentar
+                    <div class="flex items-center gap-2">
+                        <span>💬 Komentar</span>
+
+                        <span v-if="unreadCount > 0" class="rounded-full bg-red-500 px-2 py-0.5 text-xs font-medium text-white shadow-md">
+                            {{ unreadCount }} New
+                        </span>
+                    </div>
                 </h2>
 
                 <div ref="commentContainerRef" class="space-y-2 overflow-y-auto p-2 transition-all duration-200">
@@ -525,6 +597,11 @@ const cancelReply = () => {
                         class="flex flex-col gap-1"
                         @contextmenu.prevent="startReply(comment)"
                     >
+                        <div v-if="shouldShowNewCommentDivider(comment.created_at)" class="relative my-4 flex items-center">
+                            <div class="flex-grow border-t border-red-500/50"></div>
+                            <span class="mx-3 rounded-full bg-red-500 px-3 py-1 text-xs font-semibold text-white shadow-md"> NEW COMMENTS </span>
+                            <div class="flex-grow border-t border-red-500/50"></div>
+                        </div>
                         <div v-if="shouldShowDateLabel(index)" class="my-3 text-center text-xs text-gray-800">
                             {{ formatDateLabel(comment.created_at) }}
                         </div>
@@ -552,7 +629,7 @@ const cancelReply = () => {
                                         comment.user_id === user.id
                                             ? 'self-end bg-[#055A99] text-white'
                                             : 'self-start bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-200',
-                                        comment.parent ? ' bg-[#055A99] ' : '',
+                                        comment.parent ? 'bg-[#055A99]' : '',
                                     ]"
                                 >
                                     <!-- Titik 3 untuk menampilkan menu replay, copy, edit, dan hapus -->
@@ -630,15 +707,20 @@ const cancelReply = () => {
                                     <!-- 🟦 REPLY BUBBLE (Jika comment ini adalah balasan)nah, iki sg ga kepanggil -->
                                     <div
                                         v-if="comment.parent"
-                                        class="mb-1 rounded-lg border-l-4  p-2"
-                                        :class="comment.user_id === user.id ? 'border-[#2D79B0] bg-[#72B1D5]' : 'border-gray-400 bg-gray-300 dark:border-gray-800 dark:bg-gray-500'"
+                                        class="mb-1 rounded-lg border-l-4 p-2"
+                                        :class="
+                                            comment.user_id === user.id
+                                                ? 'border-[#2D79B0] bg-[#72B1D5]'
+                                                : 'border-gray-400 bg-gray-300 dark:border-gray-800 dark:bg-gray-500'
+                                        "
                                     >
-                                        <div class="text-xs font-semibold"
+                                        <div
+                                            class="text-xs font-semibold"
                                             :class="comment.user_id === user.id ? 'text-[#205B83]' : 'text-gray-500 dark:text-gray-800'"
                                         >
                                             Replying to {{ comment.parent.user.name }}
                                         </div>
-                                        <div class="truncate text-xs text-gray-800 ">
+                                        <div class="truncate text-xs text-gray-800">
                                             {{ comment.parent.message }}
                                         </div>
                                     </div>

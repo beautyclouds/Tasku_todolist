@@ -49,12 +49,27 @@ Route::get('/history/{id}', [HistoryController::class, 'show'])->name('history.s
 Route::get('/subtask/{id}', [SubTaskController::class, 'show'])->name('subtask.show');
 Route::put('/subtask/{id}', [SubTaskController::class, 'update'])->name('subtask.update'); //update judal dan deskripsi subtask
 
+// ✅ TAMBAHKAN INI 🔥
+Route::post('/subtask/{subtask}/close', [SubTaskController::class, 'close'])
+    ->middleware(['auth', 'verified'])
+    ->name('subtask.close'); 
+// ...
+
 Route::middleware(['auth', 'verified'])->group(function () {
-    // Comments API
-    Route::get('/subtasks/{id}/comments', [CommentController::class, 'index']);
-    Route::post('/subtasks/{id}/comments', [CommentController::class, 'store']);
-    Route::put('/comments/{comment}', [CommentController::class, 'update'])->name('comment.update'); 
-    Route::delete('/comments/{comment}', [CommentController::class, 'destroy'])->name('comment.destroy');
+    // GET Comments (Menggunakan Model Binding {subtask} dan method getComments)
+    Route::get('/subtasks/{subtask}/comments', [CommentController::class, 'index'])->name('comments.index');
+    Route::get('/subtask/{id}', [SubTaskController::class, 'show'])->name('subtask.show');
+
+    // ⭐ ROUTE MARK AS READ BARU ⭐
+    Route::post('/subtask/{subtask}/mark-read', [SubTaskController::class, 'markAsRead'])
+    ->middleware(['auth', 'verified'])
+    ->name('subtask.markRead');
+    // POST Comments (Store/Reply)
+    Route::post('/subtasks/{subtask}/comments', [CommentController::class, 'store'])->name('comments.store');
+    
+    // PUT/DELETE Comments (Edit/Hapus - Menggunakan Model Binding {comment})
+    Route::put('/comments/{comment}', [CommentController::class, 'update'])->name('comments.update'); 
+    Route::delete('/comments/{comment}', [CommentController::class, 'destroy'])->name('comments.destroy');
 });
 
 require __DIR__.'/settings.php';
