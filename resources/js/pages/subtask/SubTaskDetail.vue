@@ -267,15 +267,21 @@ const sendComment = async () => {
         if (selectedFile.value) {
             const formData = new FormData();
             formData.append('type', 'file');
-            formData.append('message', newMessage.value ?? '');
-            // parent_id may be number or null/undefined; append empty string if none
-            formData.append('parent_id', (replyToId.value ?? '') as unknown as string);
+
+            // ⭐ SOLUSI KRITIS 1: Kirim null jika pesan kosong
+            formData.append('message', newMessage.value.trim() ? newMessage.value : '');
+
+            // ⭐ SOLUSI KRITIS 2: Kirim NULL jika parent_id kosong
+            formData.append('parent_id', replyToId.value ? String(replyToId.value) : '');
+
             formData.append('file', selectedFile.value);
 
+            // POST
             await axios.post(`/subtasks/${props.subtask.id}/comments`, formData, {
                 headers: { 'Content-Type': 'multipart/form-data' },
             });
         } else {
+            // Block ini sudah benar karena JSON bisa menerima null dengan baik
             await axios.post(`/subtasks/${props.subtask.id}/comments`, {
                 type: 'text',
                 message: newMessage.value,
@@ -287,6 +293,7 @@ const sendComment = async () => {
         newMessage.value = '';
         removeSelectedFile();
 
+        // reset reply
         replyToId.value = null;
         replyToUser.value = null;
         replyTo.value = null;
@@ -294,6 +301,10 @@ const sendComment = async () => {
         await fetchComments();
     } catch (err) {
         console.error('Gagal mengirim komentar:', err);
+        // Tambahkan ini agar kamu bisa lihat error dari server jika 500 masih muncul
+        if (err.response) {
+            console.error('Server Response Error:', err.response.data);
+        }
         alert('Gagal mengirim komentar. Coba lagi.');
     }
 };
@@ -807,49 +818,40 @@ const formatFileSize = (bytes?: number | null) => {
                                     </div>
 
                                     <!-- ========== FILE PREVIEW ========== -->
-                                    <div v-if="comment.file_path" class="mt-2">
-                                        <!-- Jika FILE adalah gambar -->
+                                    <div v-if="comment.file_path && comment.file_type" class="mb-2 max-w-full overflow-hidden rounded-lg">
                                         <img
-                                            v-if="comment.file_type?.startsWith('image/') ?? false"
+                                            v-if="isImageMime(comment.file_type)"
                                             :src="`/storage/${comment.file_path}`"
-                                            class="max-h-60 rounded-lg border shadow"
+                                            :alt="comment.file_name"
+                                            class="max-h-64 w-auto cursor-pointer object-contain"
+                                            @click="openFileModal(comment)"
                                         />
 
-                                        <!-- Jika FILE adalah video -->
-                                        <video
-                                            v-else-if="comment.file_type?.startsWith('video/') ?? false"
-                                            controls
-                                            class="max-h-60 rounded-lg shadow"
-                                        >
-                                            <source :src="`/storage/${comment.file_path}`" :type="comment.file_type ?? ''" />
+                                        <video v-else-if="isVideoMime(comment.file_type)" controls class="max-h-64 w-full">
+                                            <source :src="`/storage/${comment.file_path}`" :type="comment.file_type" />
                                             Browser anda tidak mendukung video.
                                         </video>
 
-                                        <!-- Jika FILE adalah audio -->
-                                        <audio v-else-if="comment.file_type?.startsWith('audio/') ?? false" controls class="mt-2 w-full">
-                                            <source :src="`/storage/${comment.file_path}`" :type="comment.file_type ?? ''" />
+                                        <audio v-else-if="isAudioMime(comment.file_type)" controls class="mt-2 w-full">
+                                            <source :src="`/storage/${comment.file_path}`" :type="comment.file_type" />
                                         </audio>
 
-                                        <!-- Jika PDF -->
-                                        <a
-                                            v-else-if="comment.file_type === 'application/pdf'"
-                                            :href="`/storage/${comment.file_path}`"
-                                            target="_blank"
-                                            class="mt-1 flex items-center gap-2 underline"
-                                            :class="comment.user_id === user.id ? 'text-gray-200' : 'text-gray-600'"
-                                        >
-                                            📄 {{ comment.file_name }}
-                                        </a>
-
-                                        <!-- File lainnya (ZIP, DOCX, DLL) -->
                                         <a
                                             v-else
                                             :href="`/storage/${comment.file_path}`"
                                             target="_blank"
-                                            class="mt-1 flex items-center gap-2 underline"
-                                            :class="comment.user_id === user.id ? 'text-gray-200' : 'text-gray-600'"
+                                            class="mt-1 flex items-center gap-2 rounded-lg p-2 underline"
+                                            :class="
+                                                comment.user_id === user.id
+                                                    ? 'bg-[#055A99] text-white hover:text-gray-200'
+                                                    : 'bg-gray-300 text-gray-800 hover:text-gray-600 dark:bg-gray-600 dark:text-gray-200'
+                                            "
                                         >
-                                            📎 Download {{ comment.file_name }}
+                                            <span class="text-xl leading-none">
+                                                {{ comment.file_type === 'application/pdf' ? '📄' : '📎' }}
+                                            </span>
+                                            <span class="truncate">{{ comment.file_name }}</span>
+                                            <span class="ml-auto text-xs">({{ formatFileSize(comment.file_size) }})</span>
                                         </a>
                                     </div>
 
@@ -933,14 +935,24 @@ const formatFileSize = (bytes?: number | null) => {
                     </div>
 
                     <!-- ========== FILE PREVIEW (BARU) ========== -->
-                    <div v-if="selectedFile" class="mb-2 rounded-lg bg-gray-100 p-2 dark:bg-gray-700">
-                        <div class="flex items-center justify-between">
-                            <span class="text-xs font-semibold text-gray-700 dark:text-gray-300">
-                                {{ selectedFile.name }} ({{ (selectedFile.size / 1024).toFixed(1) }} KB)
-                            </span>
+                    <div v-if="selectedFile" class="mb-2 flex items-center gap-3 rounded-lg bg-gray-100 p-3 dark:bg-gray-700">
+                        <img
+                            v-if="isLocalImageFile(selectedFile)"
+                            :src="URL.createObjectURL(selectedFile)"
+                            :alt="selectedFile.name"
+                            class="h-10 w-10 flex-shrink-0 rounded object-cover"
+                        />
 
-                            <button @click="removeSelectedFile" class="text-sm text-red-500 hover:text-red-700">✕</button>
+                        <span v-else class="h-10 w-10 flex-shrink-0 text-2xl leading-none">📎</span>
+
+                        <div class="flex-grow">
+                            <p class="truncate text-sm font-semibold">{{ selectedFile.name }}</p>
+                            <p class="text-xs text-gray-500 dark:text-gray-400">
+                                {{ formatFileSize(selectedFile.size) }}
+                            </p>
                         </div>
+
+                        <button @click="removeSelectedFile" class="flex-shrink-0 text-lg text-red-500 hover:text-red-700">✕</button>
                     </div>
 
                     <!-- INPUT BAR -->

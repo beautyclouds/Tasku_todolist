@@ -14,6 +14,9 @@ class SubTaskController extends Controller
     {
         $subtask = SubTask::findOrFail($id);
 
+        $lastcomment = $subtask->comments()->latest()->first();
+        $lastcommentid = $lastcomment ? $lastcomment->id : null;
+
         // Tandai sudah dibaca (Upsert: Update jika ada, Create jika tidak ada)
     SubtaskReadStatus::updateOrCreate(
         [
@@ -22,7 +25,7 @@ class SubTaskController extends Controller
         ],
         [
             'last_read_at' => now(),
-            'last_comment_id' => $subtask->comments()->latest()->first()->id ?? null, // Opsional: simpan ID komentar terakhir
+            'last_comment_id' => $lastcommentid, // Opsional: simpan ID komentar terakhir
         ]
     );
 
@@ -40,6 +43,7 @@ class SubTaskController extends Controller
         $lastReadAt = $subtask->readStatus() // (Kamu perlu relasi readStatus di Model SubTask.php)
             ->where('user_id', Auth::id())
             ->value('last_read_at');
+            
 
         
         $card = $subtask->card;
@@ -76,6 +80,7 @@ class SubTaskController extends Controller
     $status = SubtaskReadStatus::updateOrCreate(
         ['subtask_id' => $subtask->id, 'user_id' => Auth::id()],
         ['last_read_at' => now()] // Update ke waktu sekarang
+        
     );
 
     return response()->json(['success' => true]);
