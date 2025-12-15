@@ -27,6 +27,10 @@ class SubTask extends Model
 
     protected $appends = ['unread_comments_count'];
 
+    public function creator()
+    {
+        return $this->belongsTo(User::class, 'creator_id');
+    }
     public function card()
     {
         return $this->belongsTo(BoardCard::class, 'board_card_id');

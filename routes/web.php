@@ -8,6 +8,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\HistoryController;
 use App\Http\Controllers\SubTaskController;
 use App\Http\Controllers\CommentController;
+use App\Http\Controllers\NotificationController;
 
 Route::get('/', function () {
     return Inertia::render('Welcome');
@@ -74,6 +75,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::put('/comments/{comment}', [CommentController::class, 'update'])->name('comments.update'); 
     Route::delete('/comments/{comment}', [CommentController::class, 'destroy'])->name('comments.destroy');
 });
+
+Route::get('/notifications', [NotificationController::class, 'index'])
+    ->name('notifications.index');
+Route::post('/notifications/{notification}/read', [NotificationController::class, 'markAsRead'])
+    ->middleware(['auth', 'verified'])
+    ->name('notifications.markAsRead'); // <-- Kita akan panggil route ini di Vue!
 
 require __DIR__.'/settings.php';
 require __DIR__.'/auth.php';

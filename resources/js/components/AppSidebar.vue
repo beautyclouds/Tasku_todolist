@@ -1,13 +1,16 @@
 <script setup lang="ts">
-import NavFooter from '@/components/NavFooter.vue';
+// Hapus import Bell, karena Bell tidak akan dipakai di sini, tapi di NavUser
 import NavMain from '@/components/NavMain.vue';
 import NavUser from '@/components/NavUser.vue';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
 import { type NavItem } from '@/types';
 import { Link } from '@inertiajs/vue3';
-import { BookOpen, Folder, LayoutGrid, Users, Clock } from 'lucide-vue-next';
+import { BookOpen, Clock, LayoutGrid, Users } from 'lucide-vue-next'; // Pastikan tidak ada duplikat import di sini
+// Hapus computed, ref karena tidak dipakai lagi di sini
+
 import AppLogo from './AppLogo.vue';
-import Member from '@/pages/member/Member.vue';
+
+// Semua logic notifikasi (unreadCount, togglePopover, dll.) DIHAPUS dari sini.
 
 const mainNavItems: NavItem[] = [
     {
@@ -16,23 +19,22 @@ const mainNavItems: NavItem[] = [
         icon: LayoutGrid,
     },
     {
-        title:'Board',
-        href:'/board',
+        title: 'Board',
+        href: '/board',
         icon: BookOpen,
     },
     {
-        title:'Member',
-        href:'/member',
+        title: 'Member',
+        href: '/member',
         icon: Users,
     },
     {
-        title:'History',
-        href:'/history',       // route ke halaman History
-        icon: Clock,           // icon Clock untuk History
+        title: 'History',
+        href: '/history', // route ke halaman History
+        icon: Clock, // icon Clock untuk History
     },
+    // ITEM NOTIFIKASI DIHAPUS KARENA KITA PAKAI POPOVER
 ];
-
-
 </script>
 
 <template>
@@ -54,7 +56,6 @@ const mainNavItems: NavItem[] = [
         </SidebarContent>
 
         <SidebarFooter>
-            
             <NavUser />
         </SidebarFooter>
     </Sidebar>

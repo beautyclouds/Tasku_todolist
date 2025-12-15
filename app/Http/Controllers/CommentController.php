@@ -6,6 +6,7 @@ use App\Models\Comment;
 use App\Models\SubTask;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use App\Notifications\NewCommentOnSubtask;
 
 class CommentController extends Controller
 {
@@ -40,6 +41,8 @@ class CommentController extends Controller
             'file' => 'nullable|file|max:40960', // 40MB
         ]);
 
+        $subtask = SubTask::with(['card', 'creator'])->findOrFail($subtaskId);
+
         $filePath = null;
         $fileName = null;
         $fileType = null;
@@ -70,6 +73,24 @@ class CommentController extends Controller
             'file_size' => $fileSize,
             'parent_id' => $request->parent_id,
         ]);
+
+        $actor = $request->user();
+    
+    // Ambil pembuat Subtask sebagai penerima notifikasi
+    $recipient = $subtask->creator; 
+    
+    // Pastikan penerima bukan si pengirim komentar
+    if ($recipient) { // <-- Pastikan objek $recipient ada (tidak NULL)
+            
+            // Pastikan penerima bukan si pengirim komentar
+            if ($recipient->id !== $actor->id) {
+                
+                // Memicu Notifikasi!
+                $recipient->notify(
+                    new NewCommentOnSubtask($actor, $comment, $subtask, $subtask->card)
+                );
+            }
+        }
 
         return response()->json([
             'message' => 'Comment added',

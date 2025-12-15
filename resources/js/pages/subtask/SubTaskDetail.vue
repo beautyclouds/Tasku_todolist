@@ -16,6 +16,8 @@ const props = defineProps<{
     currentUserLastRead: string | null;
 }>();
 
+const URL = window.URL;
+
 const unreadCount = ref(props.subtask.unread_comments_count || 0);
 
 let isNewCommentsSectionFound = false;
