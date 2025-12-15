@@ -15,6 +15,9 @@ class Comment extends Model
         'type',
         'message',
         'file_path',
+        'file_name',
+        'file_type',
+        'file_size',
         'parent_id',
     ];
 

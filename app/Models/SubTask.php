@@ -15,6 +15,8 @@ class SubTask extends Model
         'is_done',
         'board_card_id', // 🔥 UBAH DARI 'card_id' JADI 'board_card_id'
         'closed_at',     // 🔥 TAMBAHKAN KOLOM BARU INI
+        'card_id',
+        'is_close',
     ];
     
     // 🔥 Wajib tambahkan casts, karena closed_at itu timestamp (Carbon instance)

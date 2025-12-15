@@ -101,5 +101,4 @@ class SubTaskController extends Controller
         'subtask' => $subtask, // Kirim data subtask yang sudah di-close kembali ke Vue
         ]);
     }
-
 }

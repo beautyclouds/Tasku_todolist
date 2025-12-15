@@ -32,27 +32,51 @@ class CommentController extends Controller
     // Kirim komentar baru
     public function store(Request $request, $subtaskId)
     {
+        // Validasi
         $request->validate([
             'type' => 'required|string',
             'message' => 'nullable|string',
-            'file_path' => 'nullable|string',
-            'parent_id' => 'nullable|integer|exists:comments,id', // ✅ penting
+            'parent_id' => 'nullable|integer|exists:comments,id',
+            'file' => 'nullable|file|max:40960', // 40MB
         ]);
 
+        $filePath = null;
+        $fileName = null;
+        $fileType = null;
+        $fileSize = null;
+
+        // Jika ada FILE yang dikirim
+        if ($request->hasFile('file')) {
+            $file = $request->file('file');
+
+            // Simpan ke storage/app/public/comments
+            $filePath = $file->store('comments', 'public');
+
+            // Ambil detail file
+            $fileName = $file->getClientOriginalName();
+            $fileType = $file->getClientMimeType();
+            $fileSize = $file->getSize();
+        }
+
+        // Simpan komentar ke database
         $comment = Comment::create([
             'subtask_id' => $subtaskId,
             'user_id' => Auth::id(),
             'type' => $request->type,
             'message' => $request->message,
-            'file_path' => $request->file_path,
-            'parent_id' => $request->parent_id, // ✅ penting
+            'file_path' => $filePath,
+            'file_name' => $fileName,
+            'file_type' => $fileType,
+            'file_size' => $fileSize,
+            'parent_id' => $request->parent_id,
         ]);
 
         return response()->json([
             'message' => 'Comment added',
-            'comment' => $comment->load('user', 'parent'), // boleh load parent juga
+            'comment' => $comment->load('user', 'parent'),
         ]);
     }
+
 
 
     public function update(Request $request, Comment $comment)

@@ -32,6 +32,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::put('/board/{id}/close', [BoardController::class, 'close'])->name('board.close');
     Route::delete('/board/{card}/leave', [BoardController::class, 'leaveCard'])->name('board.leave');
     Route::delete('/board/{card}/remove/{user}', [BoardController::class, 'removeMember'])->name('board.remove');
+    Route::delete('/board/tasks/{taskId}', [BoardController::class, 'deleteTask'])->name('board.task.destroy');
 });
 
 
@@ -48,6 +49,8 @@ Route::get('/history/{id}', [HistoryController::class, 'show'])->name('history.s
 //Detail Subtask
 Route::get('/subtask/{id}', [SubTaskController::class, 'show'])->name('subtask.show');
 Route::put('/subtask/{id}', [SubTaskController::class, 'update'])->name('subtask.update'); //update judal dan deskripsi subtask
+Route::patch('/subtasks/{subtask}/close', [SubTaskController::class, 'close'])
+    ->name('subtasks.close'); //untuk close subtask
 
 // ✅ TAMBAHKAN INI 🔥
 Route::post('/subtask/{subtask}/close', [SubTaskController::class, 'close'])

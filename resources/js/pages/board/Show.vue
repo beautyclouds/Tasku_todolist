@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import AppLayout from '@/layouts/AppLayout.vue';
 import { Head, router, useForm } from '@inertiajs/vue3';
-import { computed, ref } from 'vue';
+import { computed, ref, onMounted, onBeforeUnmount } from 'vue';
 
 const props = defineProps<{
     card: {
@@ -16,6 +16,7 @@ const props = defineProps<{
             name: string;
             description?: string | null;
             is_done: boolean;
+            is_close?: boolean;
             histories?: {
                 id: number;
                 action: string;
@@ -98,6 +99,19 @@ const closeHistory = () => {
     selectedHistories.value = [];
 };
 
+
+
+// 🔹 Kalau mau close menu pas klik di luar
+const closeMenu = () => {
+    activeMenu.value = null;
+};
+
+//Menuju halaman detail subtask
+const goToSubTask = (id: number) => {
+    router.get(`/subtask/${id}`);
+};
+
+//MENU TITIK 3 [CLOSE & DELETE SUBTASK]
 // 🔹 State buat simpan menu yang lagi kebuka
 const activeMenu = ref<number | null>(null);
 
@@ -111,15 +125,42 @@ const openMenu = (id: number) => {
     }
 };
 
-// 🔹 Kalau mau close menu pas klik di luar
-const closeMenu = () => {
-    activeMenu.value = null;
+// 🔹 Tutup menu kalau klik di luar
+const handleClickOutside = (event: MouseEvent) => {
+    const target = event.target as HTMLElement;
+    if (!target.closest('.relative')) {
+        activeMenu.value = null;
+    }
 };
 
-//Menuju halaman detail subtask
-const goToSubTask = (id: number) => {
-    router.get(`/subtask/${id}`);
+onMounted(() => {
+    document.addEventListener('click', handleClickOutside);
+});
+
+onBeforeUnmount(() => {
+    document.removeEventListener('click', handleClickOutside);
+});
+
+// 🔹 Fungsi delete subtask
+const deleteSubtask = (taskId: number) => {
+    if (!confirm('Apakah kamu yakin ingin menghapus subtask ini?')) return;
+
+    router.delete(`/board/tasks/${taskId}`, {
+        preserveScroll: true,
+        onSuccess: () => router.reload({ only: ['card'] })
+    });
 };
+
+
+
+// 🔹 Fungsi close subtask
+const confirmCloseSubtask = (taskId: number) => {
+    if (!confirm('Apakah kamu yakin ingin menutup subtask ini?')) return;
+
+    router.patch(`/subtasks/${taskId}/close`);
+};
+
+
 </script>
 
 <template>
@@ -273,28 +314,61 @@ const goToSubTask = (id: number) => {
                         :key="task.id"
                         class="flex flex-col gap-2 rounded-xl border border-gray-300 bg-gray-50 px-3 py-3 shadow-sm dark:border-gray-700 dark:bg-black"
                     >
-                        <div class="flex items-center gap-2">
-                            <input
-                                type="checkbox"
-                                :checked="task.is_done"
-                                @change="toggleTask(task.id)"
-                                class="h-4 w-4 accent-[#033A63] dark:accent-blue-500"
-                            />
-                            <span
-                                v-if="props.card.collaborators && props.card.collaborators.length > 0"
-                                @click="goToSubTask(task.id)"
-                                class="cursor-pointer text-blue-800 hover:underline dark:text-blue-400"
-                            >
-                                {{ task.name }}
-                            </span>
+                        <div class="flex items-center justify-between gap-2">
+                            <div class="flex items-center gap-2">
+                                <input
+                                    type="checkbox" :checked="task.is_done || task.is_close" 
+                                    :disabled="task.is_close"
+                                    @change="toggleTask(task.id)"
+                                    class="h-4 w-4 accent-[#033A63] dark:accent-blue-500"
+                                />
+                                <span
+                                    v-if="props.card.collaborators && props.card.collaborators.length > 0"
+                                    :class="task.is_close ? 'text-gray-400 cursor-not-allowed' : 'cursor-pointer'" 
+                                    @click="!task.is_close && goToSubTask(task.id)"
+                                    class="cursor-pointer text-blue-800 hover:underline dark:text-blue-400"
+                                >
+                                    {{ task.name }}
+                                </span>
 
-                            <!-- ❌ Tidak bisa diklik jika tidak ada collaborator -->
-                            <span
-                                v-else
-                                class="text-gray-600 cursor-not-allowed dark:text-gray-500"
-                            >
-                                {{ task.name }}
-                            </span>
+                                <!-- ❌ Tidak bisa diklik jika tidak ada collaborator -->
+                                <span
+                                    v-else
+                                    class="text-gray-600 cursor-not-allowed dark:text-gray-500"
+                                >
+                                    {{ task.name }}
+                                </span>
+                            </div>
+
+                            <!-- 🔹 Titik 3 menu di ujung kanan -->
+                            <div class="relative">
+                                <button
+                                    @click="openMenu(task.id)"
+                                    class="px-2 text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white"
+                                >
+                                    ⋮
+                                </button>
+
+                                <!-- Dropdown menu -->
+                                <div
+                                    v-if="activeMenu === task.id"
+                                    class="absolute right-0 mt-1 w-32 rounded-md border bg-white shadow-lg dark:border-gray-600 dark:bg-gray-700"
+                                >
+                                    <button
+                                        class="block w-full px-4 py-2 text-left text-red-600 hover:bg-gray-100 dark:text-red-400 dark:hover:bg-gray-600"
+                                        @click="deleteSubtask(task.id)"
+                                    >
+                                        Delete
+                                    </button>
+
+                                    <button
+                                        class="block w-full px-4 py-2 text-left text-red-600 hover:bg-gray-100 dark:text-red-400 dark:hover:bg-gray-600"
+                                        @click="confirmCloseSubtask(task.id)"
+                                    >
+                                        Close
+                                    </button>
+                                </div>
+                            </div>
                         </div>
 
                         <p
