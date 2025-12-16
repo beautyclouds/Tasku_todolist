@@ -74,34 +74,26 @@ class SubTaskController extends Controller
 
     public function markAsRead(SubTask $subtask)
     {
-    // Cari atau buat status baca untuk user yang sedang login di subtask ini
-    $status = SubtaskReadStatus::updateOrCreate(
-        ['subtask_id' => $subtask->id, 'user_id' => Auth::id()],
-        ['last_read_at' => now()] // Update ke waktu sekarang
+        // Cari atau buat status baca untuk user yang sedang login di subtask ini
+        $status = SubtaskReadStatus::updateOrCreate(
+            ['subtask_id' => $subtask->id, 'user_id' => Auth::id()],
+            ['last_read_at' => now()] // Update ke waktu sekarang
         
-    );
+        );
 
-    return response()->json(['success' => true]);
-}
+        return response()->json(['success' => true]);
+    }
 
     public function close(SubTask $subtask)
     {
-        // 1. Cek status: Kalau closed_at sudah ada isinya, balikin error
-        if ($subtask->closed_at !== null) {
-        return response()->json(['message' => 'Subtask already closed.'], 400);
-        }
-    
-        // 2. Update kolom closed_at
+        // 🔥 INI YANG PENTING
         $subtask->update([
-        'closed_at' => now(), // Set ke waktu saat ini
+            'is_close' => true,   // ← ini yang dipakai frontend
+            'is_done'  => true,   // biar checkbox centang
+            'closed_at'=> now(),
         ]);
-    
-        // 3. Muat ulang data (penting jika ada appends/relasi lain yang perlu di-update)
-        $subtask->load('card.collaborators'); // Muat ulang relasi yang dibutuhkan Vue
-    
-        return response()->json([
-        'message' => 'Subtask closed successfully.',
-        'subtask' => $subtask, // Kirim data subtask yang sudah di-close kembali ke Vue
-        ]);
+
+        return back(); // ⬅️ WAJIB supaya Inertia reload
     }
+
 }

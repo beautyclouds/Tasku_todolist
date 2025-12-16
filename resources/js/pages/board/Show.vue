@@ -104,7 +104,8 @@ const closeHistory = () => {
 
 // 🔹 Kalau mau close menu pas klik di luar
 const closeMenu = () => {
-    activeMenu.value = null;
+    activeTaskMenu.value = null;
+    activeCollaboratorMenu.value = null;
 };
 
 //Menuju halaman detail subtask
@@ -113,26 +114,32 @@ const goToSubTask = (id: number) => {
 };
 
 //MENU TITIK 3 [CLOSE & DELETE SUBTASK]
-// 🔹 State buat simpan menu yang lagi kebuka
-const activeMenu = ref<number | null>(null);
+const activeTaskMenu = ref<number | null>(null);
+const activeCollaboratorMenu = ref<number | null>(null);
 
 
 // 🔹 Fungsi toggle menu titik 3
-const openMenu = (id: number) => {
-    if (activeMenu.value === id) {
-        activeMenu.value = null;
-    } else {
-        activeMenu.value = id;
-    }
+const openTaskMenu = (id: number) => {
+    activeTaskMenu.value =
+        activeTaskMenu.value === id ? null : id;
 };
+
+const openCollaboratorMenu = (id: number) => {
+    activeCollaboratorMenu.value =
+        activeCollaboratorMenu.value === id ? null : id;
+};
+
 
 // 🔹 Tutup menu kalau klik di luar
 const handleClickOutside = (event: MouseEvent) => {
     const target = event.target as HTMLElement;
-    if (!target.closest('.relative')) {
-        activeMenu.value = null;
+
+    if (!target.closest('.task-menu') && !target.closest('.collaborator-menu')) {
+        activeTaskMenu.value = null;
+        activeCollaboratorMenu.value = null;
     }
 };
+
 
 onMounted(() => {
     document.addEventListener('click', handleClickOutside);
@@ -158,8 +165,18 @@ const deleteSubtask = (taskId: number) => {
 const confirmCloseSubtask = (taskId: number) => {
     if (!confirm('Apakah kamu yakin ingin menutup subtask ini?')) return;
 
-    router.patch(`/subtasks/${taskId}/close`);
+    router.patch(`/subtasks/${taskId}/close`, {}, {
+        preserveScroll: true,
+        onSuccess: () => {
+            // 🔥 TUTUP MENU
+            activeTaskMenu.value = null;
+
+            // 🔄 RELOAD CARD BIAR DATA TERUPDATE
+            router.reload({ only: ['card'] });
+        }
+    });
 };
+
 
 
 </script>
@@ -235,9 +252,12 @@ const confirmCloseSubtask = (taskId: number) => {
                         </span>
 
                         <!-- 🔹 Menu titik 3 -->
-                        <div class="relative" v-if="props.card.user.id === $page.props.auth.user.id || collaborator.id === $page.props.auth.user.id">
+                        <div
+                            class="relative collaborator-menu"
+                            v-if="props.card.user.id === $page.props.auth.user.id || collaborator.id === $page.props.auth.user.id"
+                        >
                             <button
-                                @click="openMenu(collaborator.id)"
+                                @click="openCollaboratorMenu(collaborator.id)"
                                 class="ml-2 px-2 text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white"
                             >
                                 ⋮
@@ -245,7 +265,7 @@ const confirmCloseSubtask = (taskId: number) => {
 
                             <!-- Dropdown -->
                             <div
-                                v-if="activeMenu === collaborator.id"
+                                v-if="activeCollaboratorMenu === collaborator.id"
                                 class="absolute right-0 mt-1 w-28 rounded-md border bg-white shadow-lg dark:border-gray-600 dark:bg-gray-700"
                             >
                                 <!-- ✅ Kalau owner -->
@@ -320,14 +340,17 @@ const confirmCloseSubtask = (taskId: number) => {
                                 <input
                                     type="checkbox" :checked="task.is_done || task.is_close" 
                                     :disabled="task.is_close"
-                                    @change="toggleTask(task.id)"
+                                    @change="!task.is_close && toggleTask(task.id)"
                                     class="h-4 w-4 accent-[#033A63] dark:accent-blue-500"
                                 />
                                 <span
                                     v-if="props.card.collaborators && props.card.collaborators.length > 0"
-                                    :class="task.is_close ? 'text-gray-400 cursor-not-allowed' : 'cursor-pointer'" 
                                     @click="!task.is_close && goToSubTask(task.id)"
-                                    class="cursor-pointer text-blue-800 hover:underline dark:text-blue-400"
+                                    :class="[
+                                        task.is_close
+                                            ? 'text-gray-400 cursor-not-allowed pointer-events-none'
+                                            : 'cursor-pointer text-blue-800 hover:underline dark:text-blue-400'
+                                    ]"
                                 >
                                     {{ task.name }}
                                 </span>
@@ -342,7 +365,7 @@ const confirmCloseSubtask = (taskId: number) => {
                             </div>
 
                             <!-- 🔹 Titik 3 menu di ujung kanan -->
-                            <div class="relative flex items-center gap-2">
+                            <div class="relative flex items-center gap-2 task-menu">
                                 <!-- 🔴 Indikator unread -->
                                 <span
                                     v-if="task.unread_comments_count && task.unread_comments_count > 0"
@@ -352,7 +375,7 @@ const confirmCloseSubtask = (taskId: number) => {
                                 </span>
 
                                 <button
-                                    @click="openMenu(task.id)"
+                                    @click="openTaskMenu(task.id)"
                                     class="px-2 text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white"
                                 >
                                     ⋮
@@ -360,7 +383,7 @@ const confirmCloseSubtask = (taskId: number) => {
 
                                 <!-- Dropdown menu -->
                                 <div
-                                    v-if="activeMenu === task.id"
+                                    v-if="activeTaskMenu === task.id"
                                     class="absolute right-0 mt-1 w-32 rounded-md border bg-white shadow-lg dark:border-gray-600 dark:bg-gray-700"
                                 >
                                     <button
@@ -371,11 +394,12 @@ const confirmCloseSubtask = (taskId: number) => {
                                     </button>
 
                                     <button
+                                        v-if="!task.is_close"
                                         class="block w-full px-4 py-2 text-left text-red-600 hover:bg-gray-100 dark:text-red-400 dark:hover:bg-gray-600"
                                         @click="confirmCloseSubtask(task.id)"
                                     >
                                         Close
-                                    </button>
+                                </button>
                                 </div>
                             </div>
                         </div>
