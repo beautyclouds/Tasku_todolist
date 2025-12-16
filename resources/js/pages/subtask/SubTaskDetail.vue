@@ -2,7 +2,7 @@
 import AppLayout from '@/layouts/AppLayout.vue';
 import { Head, router, usePage } from '@inertiajs/vue3';
 import axios from 'axios';
-import { nextTick, onMounted, onUnmounted, computed, ref } from 'vue';
+import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue';
 
 // ============================
 // DEFINISI PROPS
@@ -51,10 +51,9 @@ interface SubTaskType {
     is_close?: boolean;
     created_at: string;
     updated_at: string;
-    unread_comments_count?: number; 
+    unread_comments_count?: number;
     first_unread_comment_id?: number | null;
 }
-
 
 // ============================
 // USER LOGIN
@@ -180,7 +179,7 @@ const onWindowClick = (e: any) => {
     try {
         if ((e.target as Element).closest && (e.target as Element).closest('.menu-dropdown')) return;
         if ((e.target as Element).closest && (e.target as Element).closest('.menu-btn')) return;
-    } catch (_e) {
+    } catch {
         // ignore
     }
     closeMenu();
@@ -211,6 +210,8 @@ const fetchComments = async () => {
 
     // Backend kamu mengembalikan { comments: [...] }
     comments.value = res.data.comments ?? res.data;
+
+    cancelReply();
 
     await nextTick();
     scrollToBottom();
@@ -256,7 +257,6 @@ const sendComment = async () => {
     }
 };
 
-
 // ============================
 // MENU STATE
 // ============================
@@ -270,18 +270,18 @@ const closeMenu = () => {
     activeMenuId.value = null;
 };
 
-onMounted(() => {
-    window.addEventListener('click', (e: any) => {
-        // Jika klik di dalam menu dropdown → jangan tutup
-        if (e.target.closest('.menu-dropdown')) return;
-
-        // Jika klik tombol titik 3 → jangan tutup
-        if (e.target.closest('.menu-btn')) return;
-
-        // Selain itu → tutup
-        closeMenu();
-    });
-});
+// onMounted(() => {
+//    window.addEventListener('click', (e: any) => {
+//        // Jika klik di dalam menu dropdown → jangan tutup
+//        if (e.target.closest('.menu-dropdown')) return;
+//
+//        // Jika klik tombol titik 3 → jangan tutup
+//        if (e.target.closest('.menu-btn')) return;
+//
+//        // Selain itu → tutup
+//        closeMenu();
+//   });
+///});
 onUnmounted(() => {
     window.removeEventListener('click', closeMenu);
 });
@@ -447,7 +447,9 @@ const handleFileUpload = (event: Event) => {
     // create preview only for local previewing (image/video/audio)
     // revoke previous object URL if any
     if (filePreviewUrl.value) {
-        try { URL.revokeObjectURL(filePreviewUrl.value); } catch (_e) {}
+        try {
+            URL.revokeObjectURL(filePreviewUrl.value);
+        } catch {}
     }
     filePreviewUrl.value = URL.createObjectURL(file);
 };
@@ -455,7 +457,9 @@ const handleFileUpload = (event: Event) => {
 const removeSelectedFile = () => {
     selectedFile.value = null;
     if (filePreviewUrl.value) {
-        try { URL.revokeObjectURL(filePreviewUrl.value); } catch (_e) {}
+        try {
+            URL.revokeObjectURL(filePreviewUrl.value);
+        } catch {}
     }
     filePreviewUrl.value = null;
 };
@@ -493,11 +497,9 @@ const formatFileSize = (bytes?: number | null) => {
 
 //INDIKATOR UNREAD
 const firstUnreadIndex = computed(() => {
-  if (!props.subtask.unread_comments_count) return -1;
-  return comments.value.length - props.subtask.unread_comments_count;
+    if (!props.subtask.unread_comments_count) return -1;
+    return comments.value.length - props.subtask.unread_comments_count;
 });
-
-
 </script>
 
 <template>
@@ -609,7 +611,7 @@ const firstUnreadIndex = computed(() => {
             <div class="relative mt-12">
                 <h2
                     ref="commentHeaderRef"
-                    class="sticky z-10 flex justify-center border-b bg-white py-2 text-lg font-semibold text-[#033A63] rounded-lg dark:bg-black dark:text-gray-100"
+                    class="sticky z-10 flex justify-center rounded-lg border-b bg-white py-2 text-lg font-semibold text-[#033A63] dark:bg-black dark:text-gray-100"
                     :style="{ top: isCommentSticky ? '70px' : 'auto' }"
                 >
                     💬 Komentar
@@ -630,9 +632,15 @@ const firstUnreadIndex = computed(() => {
                         <!-- Indikator unread -->
                         <div
                             v-if="props.subtask.first_unread_comment_id && comment.id === props.subtask.first_unread_comment_id"
-                            class="text-center bg-yellow-100 text-yellow-800 text-xs py-1 my-2 rounded"
+                            class="relative my-3 text-center"
                         >
-                            {{ props.subtask.unread_comments_count }} pesan belum dibaca
+                            <div class="absolute inset-x-0 top-1/2 h-px -translate-y-1/2 bg-yellow-400 dark:bg-yellow-600"></div>
+
+                            <span
+                                class="relative inline-block rounded-full bg-yellow-500 px-3 py-1 text-xs font-semibold text-white shadow-md dark:bg-yellow-700"
+                            >
+                                {{ props.subtask.unread_comments_count }} pesan baru
+                            </span>
                         </div>
 
                         <div class="flex gap-2" :class="comment.user_id === user.id ? 'justify-end' : 'justify-start'">
@@ -658,7 +666,7 @@ const firstUnreadIndex = computed(() => {
                                         comment.user_id === user.id
                                             ? 'self-end bg-[#055A99] text-white'
                                             : 'self-start bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-200',
-                                        comment.parent ? ' bg-[#055A99] ' : '',
+                                        comment.parent ? 'bg-[#055A99]' : '',
                                     ]"
                                 >
                                     <!-- Titik 3 untuk menampilkan menu replay, copy, edit, dan hapus -->
@@ -736,33 +744,40 @@ const firstUnreadIndex = computed(() => {
                                     <!-- 🟦 REPLY BUBBLE (Jika comment ini adalah balasan)nah, iki sg ga kepanggil -->
                                     <div
                                         v-if="comment.parent"
-                                        class="mb-1 rounded-lg border-l-4  p-2"
-                                        :class="comment.user_id === user.id ? 'border-[#2D79B0] bg-[#72B1D5]' : 'border-gray-400 bg-gray-300 dark:border-gray-800 dark:bg-gray-500'"
+                                        class="mb-1 rounded-lg border-l-4 p-2 transition-all duration-300"
+                                        :class="[
+                                            comment.user_id === user.id
+                                                ? 'border-[#2D79B0] bg-[#e6f4ff]' // Latar belakang lebih terang untuk balasan di bubble sendiri
+                                                : 'border-gray-400 bg-gray-300 dark:border-gray-600 dark:bg-gray-600', // Latar belakang di bubble lawan
+                                        ]"
                                     >
-                                        <div class="text-xs font-semibold"
-                                            :class="comment.user_id === user.id ? 'text-[#205B83]' : 'text-gray-500 dark:text-gray-800'"
+                                        <div
+                                            class="text-xs font-semibold"
+                                            :class="comment.user_id === user.id ? 'text-[#033A63]' : 'text-gray-800 dark:text-gray-200'"
                                         >
                                             Replying to {{ comment.parent.user.name }}
                                         </div>
 
-                                        <div class="truncate text-xs text-gray-800 ">
+                                        <div
+                                            class="truncate text-xs"
+                                            :class="comment.user_id === user.id ? 'text-[#033A63]' : 'text-gray-800 dark:text-gray-200'"
+                                        >
                                             {{ comment.parent.message }}
                                         </div>
                                     </div>
 
                                     <!-- ========== FILE PREVIEW ========== -->
                                     <div v-if="comment.file_path" class="mt-2">
-
                                         <!-- Jika FILE adalah gambar -->
                                         <img
-                                            v-if="(comment.file_type?.startsWith('image/') ?? false)"
+                                            v-if="comment.file_type?.startsWith('image/') ?? false"
                                             :src="`/storage/${comment.file_path}`"
                                             class="max-h-60 rounded-lg border shadow"
                                         />
 
                                         <!-- Jika FILE adalah video -->
                                         <video
-                                            v-else-if="(comment.file_type?.startsWith('video/') ?? false)"
+                                            v-else-if="comment.file_type?.startsWith('video/') ?? false"
                                             controls
                                             class="max-h-60 rounded-lg shadow"
                                         >
@@ -771,11 +786,7 @@ const firstUnreadIndex = computed(() => {
                                         </video>
 
                                         <!-- Jika FILE adalah audio -->
-                                        <audio
-                                            v-else-if="(comment.file_type?.startsWith('audio/') ?? false)"
-                                            controls
-                                            class="w-full mt-2"
-                                        >
+                                        <audio v-else-if="comment.file_type?.startsWith('audio/') ?? false" controls class="mt-2 w-full">
                                             <source :src="`/storage/${comment.file_path}`" :type="comment.file_type ?? ''" />
                                         </audio>
 
@@ -784,10 +795,10 @@ const firstUnreadIndex = computed(() => {
                                             v-else-if="comment.file_type === 'application/pdf'"
                                             :href="`/storage/${comment.file_path}`"
                                             target="_blank"
-                                            class="flex items-center gap-2 mt-1 underline"
+                                            class="mt-1 flex items-center gap-2 underline"
                                             :class="comment.user_id === user.id ? 'text-gray-200' : 'text-gray-600'"
                                         >
-                                            📄 {{ comment.file_name }}
+                                            📄 {{ comment.file_name }} ({{ formatFileSize(comment.file_size) }})
                                         </a>
 
                                         <!-- File lainnya (ZIP, DOCX, DLL) -->
@@ -795,10 +806,10 @@ const firstUnreadIndex = computed(() => {
                                             v-else
                                             :href="`/storage/${comment.file_path}`"
                                             target="_blank"
-                                            class="flex items-center gap-2 mt-1  underline"
+                                            class="mt-1 flex items-center gap-2 underline"
                                             :class="comment.user_id === user.id ? 'text-gray-200' : 'text-gray-600'"
                                         >
-                                            📎 Download {{ comment.file_name }}
+                                            📎 Download {{ comment.file_name }} ({{ formatFileSize(comment.file_size) }})
                                         </a>
                                     </div>
 
@@ -806,7 +817,6 @@ const firstUnreadIndex = computed(() => {
                                     <div class="whitespace-pre-wrap">
                                         <span>{{ comment.message }}</span>
                                     </div>
-
 
                                     <!-- Indikator setelah diedit -->
                                     <span
@@ -889,9 +899,7 @@ const firstUnreadIndex = computed(() => {
                                 {{ selectedFile.name }} ({{ (selectedFile.size / 1024).toFixed(1) }} KB)
                             </span>
 
-                            <button @click="removeSelectedFile" class="text-red-500 hover:text-red-700 text-sm">
-                                ✕
-                            </button>
+                            <button @click="removeSelectedFile" class="text-sm text-red-500 hover:text-red-700">✕</button>
                         </div>
                     </div>
 
@@ -912,12 +920,7 @@ const firstUnreadIndex = computed(() => {
                         >
                             📎
                         </label>
-                        <input
-                            id="file-input"
-                            type="file"
-                            class="hidden"
-                            @change="handleFileUpload"
-                        />
+                        <input id="file-input" type="file" class="hidden" @change="handleFileUpload" />
                         <button
                             @click="sendComment"
                             class="rounded-lg bg-[#033A63] px-4 py-2 text-white hover:bg-[#055A99] disabled:bg-[#3B8BC9]"
