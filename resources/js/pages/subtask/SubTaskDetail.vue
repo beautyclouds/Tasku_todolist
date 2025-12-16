@@ -219,21 +219,26 @@ const fetchComments = async () => {
 
 // Modifikasi fungsi sendComment untuk menangani reply ID (jika backend mendukung)
 const sendComment = async () => {
-    // guard: but allow if selectedFile present
     if (!newMessage.value.trim() && !selectedFile.value) return;
 
     try {
         if (selectedFile.value) {
             const formData = new FormData();
             formData.append('type', 'file');
-            formData.append('message', newMessage.value ?? '');
-            // parent_id may be number or null/undefined; append empty string if none
-            formData.append('parent_id', (replyToId.value ?? '') as unknown as string);
+            formData.append('message', newMessage.value);
+
+            // ✅ KIRIM parent_id HANYA JIKA REPLY
+            if (replyToId.value !== null) {
+                formData.append('parent_id', String(replyToId.value));
+            }
+
             formData.append('file', selectedFile.value);
 
-            await axios.post(`/subtasks/${props.subtask.id}/comments`, formData, {
-                headers: { 'Content-Type': 'multipart/form-data' },
-            });
+            await axios.post(
+                `/subtasks/${props.subtask.id}/comments`,
+                formData,
+                { headers: { 'Content-Type': 'multipart/form-data' } },
+            );
         } else {
             await axios.post(`/subtasks/${props.subtask.id}/comments`, {
                 type: 'text',
@@ -242,20 +247,20 @@ const sendComment = async () => {
             });
         }
 
-        // reset
+        // 🔄 Reset state
         newMessage.value = '';
         removeSelectedFile();
-
         replyToId.value = null;
         replyToUser.value = null;
         replyTo.value = null;
 
         await fetchComments();
-    } catch (err) {
-        console.error('Gagal mengirim komentar:', err);
-        alert('Gagal mengirim komentar. Coba lagi.');
+    } catch (err: any) {
+        console.error(err.response?.data ?? err);
+        alert(err.response?.data?.message ?? 'Gagal mengirim komentar');
     }
 };
+
 
 // ============================
 // MENU STATE

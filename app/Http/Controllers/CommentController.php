@@ -6,8 +6,6 @@ use App\Models\Comment;
 use App\Models\SubTask;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use App\Notifications\NewCommentOnSubtask;
-use Illuminate\Support\Facades\Notification;
 
 class CommentController extends Controller
 {
@@ -34,39 +32,51 @@ class CommentController extends Controller
     // Kirim komentar baru
     public function store(Request $request, $subtaskId)
     {
-        // Validasi
+        // Pastikan user login
+        if (!Auth::check()) {
+            return response()->json(['message' => 'Unauthenticated'], 401);
+        }
+
+        // Validasi fleksibel
         $request->validate([
-            'type' => 'required|string',
+            'type' => 'nullable|string',
             'message' => 'nullable|string',
             'parent_id' => 'nullable|integer|exists:comments,id',
-            'file' => 'nullable|file|max:40960', // 40MB
+            'file' => 'nullable|file|max:40960',
         ]);
 
-        $subtask = SubTask::with(['card', 'creator'])->findOrFail($subtaskId);
+        $subtask = SubTask::findOrFail($subtaskId);
 
         $filePath = null;
         $fileName = null;
         $fileType = null;
         $fileSize = null;
 
-        // Jika ada FILE yang dikirim
+        // Upload file jika ada
         if ($request->hasFile('file')) {
             $file = $request->file('file');
-
-            // Simpan ke storage/app/public/comments
             $filePath = $file->store('comments', 'public');
-
-            // Ambil detail file
             $fileName = $file->getClientOriginalName();
             $fileType = $file->getClientMimeType();
             $fileSize = $file->getSize();
         }
 
-        // Simpan komentar ke database
+        // Tentukan tipe komentar otomatis
+        $type = $request->type
+            ?? ($request->hasFile('file') ? 'file' : 'text');
+
+        // Cegah komentar kosong
+        if (!$request->message && !$request->hasFile('file')) {
+            return response()->json([
+                'message' => 'Message or file is required',
+            ], 422);
+        }
+
+        // Simpan komentar
         $comment = Comment::create([
             'subtask_id' => $subtaskId,
             'user_id' => Auth::id(),
-            'type' => $request->type,
+            'type' => $type,
             'message' => $request->message,
             'file_path' => $filePath,
             'file_name' => $fileName,
@@ -75,49 +85,11 @@ class CommentController extends Controller
             'parent_id' => $request->parent_id,
         ]);
 
-        $actor = $request->user();
-        $card = $subtask->card;
-
-        // 1. Kumpulkan semua penerima potensial: Card Owner dan Collaborators.
-        // Kita menggunakan 'pluck' untuk mendapatkan koleksi user.
-        $collaborators = $card->collaborators;
-        $cardOwner = $card->user;
-
-        // Gabungkan Owner dan Collaborators menjadi satu koleksi
-        $recipients = $collaborators->push($cardOwner)->unique();
-    
-        // 2. Filter: Hapus pengirim komentar dari daftar penerima
-        $usersToNotify = $recipients->filter(function ($user) use ($actor) {
-        return $user->id !== $actor->id;
-        });
-
-        Notification::send(
-        $usersToNotify,
-        new NewCommentOnSubtask($actor, $comment, $subtask, $card)
-        );
-    // Ambil pembuat Subtask sebagai penerima notifikasi
-    $recipient = $subtask->creator; 
-    
-    // Pastikan penerima bukan si pengirim komentar
-    if ($recipient) { // <-- Pastikan objek $recipient ada (tidak NULL)
-            
-            // Pastikan penerima bukan si pengirim komentar
-            if ($recipient->id !== $actor->id) {
-                
-                // Memicu Notifikasi!
-                $recipient->notify(
-                    new NewCommentOnSubtask($actor, $comment, $subtask, $subtask->card)
-                );
-            }
-        }
-
         return response()->json([
             'message' => 'Comment added',
-            'comment' => $comment->load('user', 'parent'),
+            'comment' => $comment->load('user', 'parent.user'),
         ]);
     }
-
-
 
     public function update(Request $request, Comment $comment)
     {
