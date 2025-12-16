@@ -2,7 +2,7 @@
 import AppLayout from '@/layouts/AppLayout.vue';
 import { Head, router, usePage } from '@inertiajs/vue3';
 import axios from 'axios';
-import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue';
+import { computed, nextTick, onMounted, onUnmounted, onBeforeUnmount, ref } from 'vue';
 
 // ============================
 // DEFINISI PROPS
@@ -247,6 +247,13 @@ const sendComment = async () => {
             });
         }
 
+        // 🔥 tandai sudah dibaca di backend
+        await axios.post(route('subtask.markRead', props.subtask.id))
+
+        // 🔥 HAPUS UNREAD DI FRONTEND
+        unreadCount.value = 0
+        firstUnreadId.value = null
+
         // 🔄 Reset state
         newMessage.value = '';
         removeSelectedFile();
@@ -260,6 +267,7 @@ const sendComment = async () => {
         alert(err.response?.data?.message ?? 'Gagal mengirim komentar');
     }
 };
+
 
 
 // ============================
@@ -505,6 +513,21 @@ const firstUnreadIndex = computed(() => {
     if (!props.subtask.unread_comments_count) return -1;
     return comments.value.length - props.subtask.unread_comments_count;
 });
+
+//UNREAD HILANG SAAT KELUAR HALAMAN
+onBeforeUnmount(() => {
+    axios.post(route('subtask.markRead', props.subtask.id))
+
+    // 🔥 reset indikator
+    unreadCount.value = 0
+    firstUnreadId.value = null
+})
+
+
+//UNREAD HILANG SAAT KIRIM PESAN BARU
+const unreadCount = ref(props.subtask.unread_comments_count ?? 0)
+const firstUnreadId = ref<number | null>(props.subtask.first_unread_comment_id ?? null)
+
 </script>
 
 <template>
@@ -636,15 +659,15 @@ const firstUnreadIndex = computed(() => {
 
                         <!-- Indikator unread -->
                         <div
-                            v-if="props.subtask.first_unread_comment_id && comment.id === props.subtask.first_unread_comment_id"
+                            v-if="firstUnreadId && comment.id === firstUnreadId"
                             class="relative my-3 text-center"
                         >
-                            <div class="absolute inset-x-0 top-1/2 h-px -translate-y-1/2 bg-yellow-400 dark:bg-yellow-600"></div>
+                            <div class="absolute inset-x-0 top-1/2 h-px -translate-y-1/2 bg-[#033A63] dark:bg-gray-400"></div>
 
                             <span
-                                class="relative inline-block rounded-full bg-yellow-500 px-3 py-1 text-xs font-semibold text-white shadow-md dark:bg-yellow-700"
+                                class="relative inline-block rounded-full bg-[#033A63] px-3 py-1 text-xs font-semibold text-white shadow-md dark:bg-gray-400"
                             >
-                                {{ props.subtask.unread_comments_count }} pesan baru
+                                {{ unreadCount }} pesan baru
                             </span>
                         </div>
 

@@ -14,21 +14,6 @@ class SubTaskController extends Controller
     {
         $subtask = SubTask::findOrFail($id);
 
-        $lastcomment = $subtask->comments()->latest()->first();
-        $lastcommentid = $lastcomment ? $lastcomment->id : null;
-
-        // Tandai sudah dibaca (Upsert: Update jika ada, Create jika tidak ada)
-        SubtaskReadStatus::updateOrCreate(
-            [
-                'subtask_id' => $id,
-                'user_id' => Auth::id(),
-            ],
-            [
-                'last_read_at' => now(),
-                'last_comment_id' => $lastcommentid, // Opsional: simpan ID komentar terakhir
-            ]
-        );
-
         // AMBIL KOMENTAR LEVEL 1 DAN REPLIES-NYA
         $comments = $subtask->comments()
             ->with([
