@@ -23,6 +23,7 @@ const props = defineProps<{
                 user: { id: number; name: string };
                 created_at: string;
             }[];
+            unread_comments_count?: number; // ⚡ properti baru
         }[];
         collaborators?: { id: number; name: string; photo: string | null }[];
     };
@@ -341,7 +342,15 @@ const confirmCloseSubtask = (taskId: number) => {
                             </div>
 
                             <!-- 🔹 Titik 3 menu di ujung kanan -->
-                            <div class="relative">
+                            <div class="relative flex items-center gap-2">
+                                <!-- 🔴 Indikator unread -->
+                                <span
+                                    v-if="task.unread_comments_count && task.unread_comments_count > 0"
+                                    class="flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs font-bold text-white"
+                                >
+                                    {{ task.unread_comments_count }}
+                                </span>
+
                                 <button
                                     @click="openMenu(task.id)"
                                     class="px-2 text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white"

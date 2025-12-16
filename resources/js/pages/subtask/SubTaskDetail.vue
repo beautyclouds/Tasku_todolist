@@ -2,51 +2,17 @@
 import AppLayout from '@/layouts/AppLayout.vue';
 import { Head, router, usePage } from '@inertiajs/vue3';
 import axios from 'axios';
-import dayjs from 'dayjs';
-import { nextTick, onMounted, onUnmounted, ref } from 'vue';
+import { nextTick, onMounted, onUnmounted, computed, ref } from 'vue';
 
 // ============================
 // DEFINISI PROPS
 // ============================
 const props = defineProps<{
-    subtask: any;
+    subtask: SubTaskType;
     card: any;
     collaborators: any[];
     // comments: any[];
-    currentUserLastRead: string | null;
 }>();
-
-const URL = window.URL;
-
-const unreadCount = ref(props.subtask.unread_comments_count || 0);
-
-let isNewCommentsSectionFound = false;
-
-/**
- * Menentukan apakah garis pemisah "Komentar Baru" harus ditampilkan di atas komentar ini.
- * Garis hanya ditampilkan sekali, di atas komentar pertama yang dibuat SETELAH last_read_at user.
- * @param {string} commentCreatedAt - Timestamp comment.created_at
- * @returns {boolean}
- */
-
-const shouldShowNewCommentDivider = (commentCreatedAt: string) => {
-    // Jika belum pernah dibaca (lastRead null) atau lastRead sudah ketemu, jangan tampilkan lagi.
-    if (isNewCommentsSectionFound || !props.currentUserLastRead) {
-        return false;
-    }
-
-    // Ubah string ke Dayjs object (pastikan kamu pakai dayjs)
-    const commentTime = dayjs(commentCreatedAt);
-    const lastReadTime = dayjs(props.currentUserLastRead);
-
-    // Cek: Apakah waktu komentar ini LEBIH BARU dari waktu terakhir dibaca?
-    if (commentTime.isAfter(lastReadTime)) {
-        isNewCommentsSectionFound = true; // Tandai sudah ketemu
-        return true; // Tampilkan divider
-    }
-
-    return false;
-};
 
 // ============================
 // TIPE DATA COMMENT
@@ -76,6 +42,19 @@ interface CommentType {
         message: string | null;
     } | null;
 }
+
+interface SubTaskType {
+    id: number;
+    name: string;
+    description?: string | null;
+    is_done: boolean;
+    is_close?: boolean;
+    created_at: string;
+    updated_at: string;
+    unread_comments_count?: number; 
+    first_unread_comment_id?: number | null;
+}
+
 
 // ============================
 // USER LOGIN
@@ -201,7 +180,7 @@ const onWindowClick = (e: any) => {
     try {
         if ((e.target as Element).closest && (e.target as Element).closest('.menu-dropdown')) return;
         if ((e.target as Element).closest && (e.target as Element).closest('.menu-btn')) return;
-    } catch {
+    } catch (_e) {
         // ignore
     }
     closeMenu();
@@ -226,35 +205,12 @@ onUnmounted(() => {
 const comments = ref<CommentType[]>([]);
 const newMessage = ref('');
 
+// Ambil komentar
 const fetchComments = async () => {
-    // 1. Ambil Komen
     const res = await axios.get(`/subtasks/${props.subtask.id}/comments`);
-    comments.value = res.data.comments ?? res.data; // Sesuaikan jika backend returnnya di array/object lain
 
-    // 2. Tandai Subtask sebagai Sudah Dibaca (Mark as Read)
-    try {
-        await axios.post(`/subtask/${props.subtask.id}/mark-read`);
-        // ⭐ TAMBAHKAN INI: Update counter setelah mark-read sukses
-        unreadCount.value = 0;
-    } catch (e) {
-        console.error('Gagal menandai sebagai terbaca:', e);
-    }
-
-    comments.value.forEach((comment) => {
-        if (comment.parent_id && !comment.parent) {
-            // Cari komentar dengan ID yang sama dengan parent_id
-            const parentComment = comments.value.find((c) => c.id === comment.parent_id);
-            if (parentComment) {
-                // Isi properti parent di komen ini
-                comment.parent = {
-                    id: parentComment.id,
-                    user_id: parentComment.user_id,
-                    user: parentComment.user,
-                    message: parentComment.message,
-                };
-            }
-        }
-    });
+    // Backend kamu mengembalikan { comments: [...] }
+    comments.value = res.data.comments ?? res.data;
 
     await nextTick();
     scrollToBottom();
@@ -269,21 +225,15 @@ const sendComment = async () => {
         if (selectedFile.value) {
             const formData = new FormData();
             formData.append('type', 'file');
-
-            // ⭐ SOLUSI KRITIS 1: Kirim null jika pesan kosong
-            formData.append('message', newMessage.value.trim() ? newMessage.value : '');
-
-            // ⭐ SOLUSI KRITIS 2: Kirim NULL jika parent_id kosong
-            formData.append('parent_id', replyToId.value ? String(replyToId.value) : '');
-
+            formData.append('message', newMessage.value ?? '');
+            // parent_id may be number or null/undefined; append empty string if none
+            formData.append('parent_id', (replyToId.value ?? '') as unknown as string);
             formData.append('file', selectedFile.value);
 
-            // POST
             await axios.post(`/subtasks/${props.subtask.id}/comments`, formData, {
                 headers: { 'Content-Type': 'multipart/form-data' },
             });
         } else {
-            // Block ini sudah benar karena JSON bisa menerima null dengan baik
             await axios.post(`/subtasks/${props.subtask.id}/comments`, {
                 type: 'text',
                 message: newMessage.value,
@@ -295,7 +245,6 @@ const sendComment = async () => {
         newMessage.value = '';
         removeSelectedFile();
 
-        // reset reply
         replyToId.value = null;
         replyToUser.value = null;
         replyTo.value = null;
@@ -303,13 +252,10 @@ const sendComment = async () => {
         await fetchComments();
     } catch (err) {
         console.error('Gagal mengirim komentar:', err);
-        // Tambahkan ini agar kamu bisa lihat error dari server jika 500 masih muncul
-        if (err.response) {
-            console.error('Server Response Error:', err.response.data);
-        }
         alert('Gagal mengirim komentar. Coba lagi.');
     }
 };
+
 
 // ============================
 // MENU STATE
@@ -501,9 +447,7 @@ const handleFileUpload = (event: Event) => {
     // create preview only for local previewing (image/video/audio)
     // revoke previous object URL if any
     if (filePreviewUrl.value) {
-        try {
-            URL.revokeObjectURL(filePreviewUrl.value);
-        } catch {}
+        try { URL.revokeObjectURL(filePreviewUrl.value); } catch (_e) {}
     }
     filePreviewUrl.value = URL.createObjectURL(file);
 };
@@ -511,9 +455,7 @@ const handleFileUpload = (event: Event) => {
 const removeSelectedFile = () => {
     selectedFile.value = null;
     if (filePreviewUrl.value) {
-        try {
-            URL.revokeObjectURL(filePreviewUrl.value);
-        } catch {}
+        try { URL.revokeObjectURL(filePreviewUrl.value); } catch (_e) {}
     }
     filePreviewUrl.value = null;
 };
@@ -548,6 +490,14 @@ const formatFileSize = (bytes?: number | null) => {
     if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
     return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
 };
+
+//INDIKATOR UNREAD
+const firstUnreadIndex = computed(() => {
+  if (!props.subtask.unread_comments_count) return -1;
+  return comments.value.length - props.subtask.unread_comments_count;
+});
+
+
 </script>
 
 <template>
@@ -564,26 +514,15 @@ const formatFileSize = (bytes?: number | null) => {
                     <h1 class="text-xl font-bold text-[#033A63] dark:text-gray-200">📋 {{ props.card.title }}</h1>
                 </div>
 
-                <div class="flex justify-end gap-2">
+                <div class="flex justify-end">
                     <button
-                        v-if="!isEditing && !isSubtaskClosed"
-                        @click="closeSubtask"
-                        class="rounded-lg bg-red-600 px-4 py-2 text-sm text-white hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-800"
-                        title="Close Subtask"
-                    >
-                        Close
-                    </button>
-
-                    <button
-                        v-if="!isEditing && !isSubtaskClosed"
+                        v-if="!isEditing"
                         @click="isEditing = true"
                         class="rounded-lg bg-[#033A63] px-4 py-2 text-lg text-sm text-white hover:bg-blue-800 dark:bg-black dark:hover:bg-gray-600"
                         title="Edit"
                     >
                         Edit
                     </button>
-
-                    <span v-if="isSubtaskClosed" class="rounded-lg bg-gray-600 px-4 py-2 text-sm text-white dark:bg-gray-700"> CLOSED </span>
                 </div>
             </div>
 
@@ -670,16 +609,10 @@ const formatFileSize = (bytes?: number | null) => {
             <div class="relative mt-12">
                 <h2
                     ref="commentHeaderRef"
-                    class="sticky z-10 flex items-center justify-center rounded-lg border-b bg-white py-2 text-lg font-semibold text-[#033A63] dark:bg-black dark:text-gray-100"
+                    class="sticky z-10 flex justify-center border-b bg-white py-2 text-lg font-semibold text-[#033A63] rounded-lg dark:bg-black dark:text-gray-100"
                     :style="{ top: isCommentSticky ? '70px' : 'auto' }"
                 >
-                    <div class="flex items-center gap-2">
-                        <span>💬 Komentar</span>
-
-                        <span v-if="unreadCount > 0" class="rounded-full bg-red-500 px-2 py-0.5 text-xs font-medium text-white shadow-md">
-                            {{ unreadCount }} New
-                        </span>
-                    </div>
+                    💬 Komentar
                 </h2>
 
                 <div ref="commentContainerRef" class="space-y-2 overflow-y-auto p-2 transition-all duration-200">
@@ -690,13 +623,16 @@ const formatFileSize = (bytes?: number | null) => {
                         class="flex flex-col gap-1"
                         @contextmenu.prevent="startReply(comment)"
                     >
-                        <div v-if="shouldShowNewCommentDivider(comment.created_at)" class="relative my-4 flex items-center">
-                            <div class="flex-grow border-t border-red-500/50"></div>
-                            <span class="mx-3 rounded-full bg-red-500 px-3 py-1 text-xs font-semibold text-white shadow-md"> NEW COMMENTS </span>
-                            <div class="flex-grow border-t border-red-500/50"></div>
-                        </div>
                         <div v-if="shouldShowDateLabel(index)" class="my-3 text-center text-xs text-gray-800">
                             {{ formatDateLabel(comment.created_at) }}
+                        </div>
+
+                        <!-- Indikator unread -->
+                        <div
+                            v-if="props.subtask.first_unread_comment_id && comment.id === props.subtask.first_unread_comment_id"
+                            class="text-center bg-yellow-100 text-yellow-800 text-xs py-1 my-2 rounded"
+                        >
+                            {{ props.subtask.unread_comments_count }} pesan belum dibaca
                         </div>
 
                         <div class="flex gap-2" :class="comment.user_id === user.id ? 'justify-end' : 'justify-start'">
@@ -722,7 +658,7 @@ const formatFileSize = (bytes?: number | null) => {
                                         comment.user_id === user.id
                                             ? 'self-end bg-[#055A99] text-white'
                                             : 'self-start bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-200',
-                                        comment.parent ? 'bg-[#055A99]' : '',
+                                        comment.parent ? ' bg-[#055A99] ' : '',
                                     ]"
                                 >
                                     <!-- Titik 3 untuk menampilkan menu replay, copy, edit, dan hapus -->
@@ -800,60 +736,69 @@ const formatFileSize = (bytes?: number | null) => {
                                     <!-- 🟦 REPLY BUBBLE (Jika comment ini adalah balasan)nah, iki sg ga kepanggil -->
                                     <div
                                         v-if="comment.parent"
-                                        class="mb-1 rounded-lg border-l-4 p-2"
-                                        :class="
-                                            comment.user_id === user.id
-                                                ? 'border-[#2D79B0] bg-[#72B1D5]'
-                                                : 'border-gray-400 bg-gray-300 dark:border-gray-800 dark:bg-gray-500'
-                                        "
+                                        class="mb-1 rounded-lg border-l-4  p-2"
+                                        :class="comment.user_id === user.id ? 'border-[#2D79B0] bg-[#72B1D5]' : 'border-gray-400 bg-gray-300 dark:border-gray-800 dark:bg-gray-500'"
                                     >
-                                        <div
-                                            class="text-xs font-semibold"
+                                        <div class="text-xs font-semibold"
                                             :class="comment.user_id === user.id ? 'text-[#205B83]' : 'text-gray-500 dark:text-gray-800'"
                                         >
                                             Replying to {{ comment.parent.user.name }}
                                         </div>
 
-                                        <div class="truncate text-xs text-gray-800">
+                                        <div class="truncate text-xs text-gray-800 ">
                                             {{ comment.parent.message }}
                                         </div>
                                     </div>
 
                                     <!-- ========== FILE PREVIEW ========== -->
-                                    <div v-if="comment.file_path && comment.file_type" class="mb-2 max-w-full overflow-hidden rounded-lg">
+                                    <div v-if="comment.file_path" class="mt-2">
+
+                                        <!-- Jika FILE adalah gambar -->
                                         <img
-                                            v-if="isImageMime(comment.file_type)"
+                                            v-if="(comment.file_type?.startsWith('image/') ?? false)"
                                             :src="`/storage/${comment.file_path}`"
-                                            :alt="comment.file_name"
-                                            class="max-h-64 w-auto cursor-pointer object-contain"
-                                            @click="openFileModal(comment)"
+                                            class="max-h-60 rounded-lg border shadow"
                                         />
 
-                                        <video v-else-if="isVideoMime(comment.file_type)" controls class="max-h-64 w-full">
-                                            <source :src="`/storage/${comment.file_path}`" :type="comment.file_type" />
+                                        <!-- Jika FILE adalah video -->
+                                        <video
+                                            v-else-if="(comment.file_type?.startsWith('video/') ?? false)"
+                                            controls
+                                            class="max-h-60 rounded-lg shadow"
+                                        >
+                                            <source :src="`/storage/${comment.file_path}`" :type="comment.file_type ?? ''" />
                                             Browser anda tidak mendukung video.
                                         </video>
 
-                                        <audio v-else-if="isAudioMime(comment.file_type)" controls class="mt-2 w-full">
-                                            <source :src="`/storage/${comment.file_path}`" :type="comment.file_type" />
+                                        <!-- Jika FILE adalah audio -->
+                                        <audio
+                                            v-else-if="(comment.file_type?.startsWith('audio/') ?? false)"
+                                            controls
+                                            class="w-full mt-2"
+                                        >
+                                            <source :src="`/storage/${comment.file_path}`" :type="comment.file_type ?? ''" />
                                         </audio>
 
+                                        <!-- Jika PDF -->
+                                        <a
+                                            v-else-if="comment.file_type === 'application/pdf'"
+                                            :href="`/storage/${comment.file_path}`"
+                                            target="_blank"
+                                            class="flex items-center gap-2 mt-1 underline"
+                                            :class="comment.user_id === user.id ? 'text-gray-200' : 'text-gray-600'"
+                                        >
+                                            📄 {{ comment.file_name }}
+                                        </a>
+
+                                        <!-- File lainnya (ZIP, DOCX, DLL) -->
                                         <a
                                             v-else
                                             :href="`/storage/${comment.file_path}`"
                                             target="_blank"
-                                            class="mt-1 flex items-center gap-2 rounded-lg p-2 underline"
-                                            :class="
-                                                comment.user_id === user.id
-                                                    ? 'bg-[#055A99] text-white hover:text-gray-200'
-                                                    : 'bg-gray-300 text-gray-800 hover:text-gray-600 dark:bg-gray-600 dark:text-gray-200'
-                                            "
+                                            class="flex items-center gap-2 mt-1  underline"
+                                            :class="comment.user_id === user.id ? 'text-gray-200' : 'text-gray-600'"
                                         >
-                                            <span class="text-xl leading-none">
-                                                {{ comment.file_type === 'application/pdf' ? '📄' : '📎' }}
-                                            </span>
-                                            <span class="truncate">{{ comment.file_name }}</span>
-                                            <span class="ml-auto text-xs">({{ formatFileSize(comment.file_size) }})</span>
+                                            📎 Download {{ comment.file_name }}
                                         </a>
                                     </div>
 
@@ -861,6 +806,7 @@ const formatFileSize = (bytes?: number | null) => {
                                     <div class="whitespace-pre-wrap">
                                         <span>{{ comment.message }}</span>
                                     </div>
+
 
                                     <!-- Indikator setelah diedit -->
                                     <span
@@ -937,24 +883,16 @@ const formatFileSize = (bytes?: number | null) => {
                     </div>
 
                     <!-- ========== FILE PREVIEW (BARU) ========== -->
-                    <div v-if="selectedFile" class="mb-2 flex items-center gap-3 rounded-lg bg-gray-100 p-3 dark:bg-gray-700">
-                        <img
-                            v-if="isLocalImageFile(selectedFile)"
-                            :src="URL.createObjectURL(selectedFile)"
-                            :alt="selectedFile.name"
-                            class="h-10 w-10 flex-shrink-0 rounded object-cover"
-                        />
+                    <div v-if="selectedFile" class="mb-2 rounded-lg bg-gray-100 p-2 dark:bg-gray-700">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-semibold text-gray-700 dark:text-gray-300">
+                                {{ selectedFile.name }} ({{ (selectedFile.size / 1024).toFixed(1) }} KB)
+                            </span>
 
-                        <span v-else class="h-10 w-10 flex-shrink-0 text-2xl leading-none">📎</span>
-
-                        <div class="flex-grow">
-                            <p class="truncate text-sm font-semibold">{{ selectedFile.name }}</p>
-                            <p class="text-xs text-gray-500 dark:text-gray-400">
-                                {{ formatFileSize(selectedFile.size) }}
-                            </p>
+                            <button @click="removeSelectedFile" class="text-red-500 hover:text-red-700 text-sm">
+                                ✕
+                            </button>
                         </div>
-
-                        <button @click="removeSelectedFile" class="flex-shrink-0 text-lg text-red-500 hover:text-red-700">✕</button>
                     </div>
 
                     <!-- INPUT BAR -->
@@ -974,7 +912,12 @@ const formatFileSize = (bytes?: number | null) => {
                         >
                             📎
                         </label>
-                        <input id="file-input" type="file" class="hidden" @change="handleFileUpload" />
+                        <input
+                            id="file-input"
+                            type="file"
+                            class="hidden"
+                            @change="handleFileUpload"
+                        />
                         <button
                             @click="sendComment"
                             class="rounded-lg bg-[#033A63] px-4 py-2 text-white hover:bg-[#055A99] disabled:bg-[#3B8BC9]"

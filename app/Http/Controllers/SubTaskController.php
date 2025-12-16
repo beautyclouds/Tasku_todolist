@@ -18,16 +18,16 @@ class SubTaskController extends Controller
         $lastcommentid = $lastcomment ? $lastcomment->id : null;
 
         // Tandai sudah dibaca (Upsert: Update jika ada, Create jika tidak ada)
-    SubtaskReadStatus::updateOrCreate(
-        [
-            'subtask_id' => $id,
-            'user_id' => Auth::id(),
-        ],
-        [
-            'last_read_at' => now(),
-            'last_comment_id' => $lastcommentid, // Opsional: simpan ID komentar terakhir
-        ]
-    );
+        SubtaskReadStatus::updateOrCreate(
+            [
+                'subtask_id' => $id,
+                'user_id' => Auth::id(),
+            ],
+            [
+                'last_read_at' => now(),
+                'last_comment_id' => $lastcommentid, // Opsional: simpan ID komentar terakhir
+            ]
+        );
 
         // AMBIL KOMENTAR LEVEL 1 DAN REPLIES-NYA
         $comments = $subtask->comments()
@@ -49,13 +49,11 @@ class SubTaskController extends Controller
         $card = $subtask->card;
 
         return inertia('subtask/SubTaskDetail', [
-            'subtask' => $subtask,
+            'subtask' => $subtask->append('first_unread_comment_id'), // <-- tambahkan append
             'card' => $card,
             'collaborators' => $card->collaborators,
-            'comments' => $comments,   // 🔥 ini komentar yang sudah sesuai reply
-            'currentUserLastRead' => $lastReadAt, // ⭐ KIRIM TIMESTAMP TERAKHIR DIBACA
+            'comments' => $comments,
         ]);
-    
     }
 
     public function update(Request $request, $id)

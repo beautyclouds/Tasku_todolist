@@ -2,23 +2,23 @@
 import AppLayout from '@/layouts/AppLayout.vue';
 import { type BreadcrumbItem } from '@/types';
 import { Head, router } from '@inertiajs/vue3';
-import { computed, defineProps, ref, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
 
 /**
  * Menghitung total komentar yang belum dibaca dari semua SubTask dalam satu Board Card.
  * @param {Array} tasks - Array SubTask (card.tasks)
  * @returns {number}
  */
-const totalUnreadComments = (tasks) => {
-    if (!tasks || tasks.length === 0) {
-        return 0;
-    }
+// Definisikan tipe untuk SubTask (hanya properti yang dibutuhkan)
+type SubTask = {
+  unread_comments_count?: number;
+};
 
-    // Menggunakan reduce untuk menjumlahkan properti unread_comments_count dari setiap task
-    return tasks.reduce((total, task) => {
-        // Pastikan task.unread_comments_count itu angka dan bukan null/undefined
-        return total + (task.unread_comments_count || 0);
-    }, 0);
+// Menghitung total komentar yang belum dibaca dari semua SubTask
+const totalUnreadComments = (tasks: SubTask[] = []): number => {
+  return tasks.reduce((total: number, task: SubTask) => {
+    return total + (task.unread_comments_count ?? 0);
+  }, 0);
 };
 
 const breadcrumbs: BreadcrumbItem[] = [{ title: 'Board', href: '/board' }];

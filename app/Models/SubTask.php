@@ -49,22 +49,17 @@ class SubTask extends Model
 
     public function readStatus()
     {
-        return $this->hasOne(SubtaskReadStatus::class, 'subtask_id');
+        return $this->hasMany(SubtaskReadStatus::class, 'subtask_id'); // ❌ sebelumnya hasOne
     }
 
     public function getUnreadCommentsCountAttribute()
     {
-        // 1. Ambil status baca user yang sedang login
-        $readStatus = $this->readStatus()
-                           ->where('user_id', \Illuminate\Support\Facades\Auth::id())
-                           ->first();
-        
-        // 2. Tentukan waktu terakhir dibaca (jika belum pernah dibaca, anggap null)
+        $userId = \Illuminate\Support\Facades\Auth::id();
+    
+        $readStatus = $this->readStatus()->where('user_id', $userId)->first();
         $lastReadAt = $readStatus ? $readStatus->last_read_at : null;
 
-        // 3. Hitung komentar yang dibuat SETELAH waktu terakhir dibaca
-        // Jika lastReadAt null, kita hitung semua komentar
-        $query = $this->comments();
+        $query = $this->comments()->where('user_id', '!=', $userId); // ❌ hanya komentar orang lain
 
         if ($lastReadAt) {
             $query->where('created_at', '>', $lastReadAt);
@@ -72,4 +67,22 @@ class SubTask extends Model
 
         return $query->count();
     }
+
+    // Ambil komentar pertama yang belum dibaca oleh user
+    public function getFirstUnreadCommentIdAttribute()
+    {
+        $userId = auth()->id();
+
+        // Ambil waktu terakhir user membaca subtask
+        $lastReadAt = $this->readStatus()->where('user_id', $userId)->value('last_read_at');
+
+        $query = $this->comments()->where('user_id', '!=', $userId);
+
+        if ($lastReadAt) {
+            $query->where('created_at', '>', $lastReadAt);
+        }
+
+        return $query->orderBy('created_at', 'asc')->value('id');
+    }
+
 }
