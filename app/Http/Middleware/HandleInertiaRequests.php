@@ -30,26 +30,6 @@ class HandleInertiaRequests extends Middleware
             'auth' => [
                 'user' => $user, // Menggunakan $user yang sudah diambil
             ],
-            
-            // --- START: LOGIC NOTIFIKASI DITAMBAH (SUDAH BENAR) ---
-            'unreadCount' => fn () => $user
-                ? $user->unreadNotifications()->count()
-                : 0,
-
-            'recentNotifications' => fn () => $user
-                ? $user->notifications()
-                    ->take(5) // Ambil 5 notifikasi terbaru
-                    ->get()
-                    ->map(function ($notification) {
-                        return [
-                            'id' => $notification->id,
-                            'read_at' => $notification->read_at,
-                            'created_at' => $notification->created_at,
-                            'data' => $notification->data, // Ini adalah payload JSON yang kita butuhkan
-                        ];
-                    })
-                : [],
-            // --- END: LOGIC NOTIFIKASI DITAMBAH ---
 
             'ziggy' => [
                 ...(new Ziggy)->toArray(),

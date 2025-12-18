@@ -5,7 +5,7 @@ import NavUser from '@/components/NavUser.vue';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
 import { type NavItem } from '@/types';
 import { Link } from '@inertiajs/vue3';
-import { BookOpen, Clock, LayoutGrid, Users } from 'lucide-vue-next'; // Pastikan tidak ada duplikat import di sini
+import { BookOpen, Clock, LayoutGrid, Users, } from 'lucide-vue-next'; // Pastikan tidak ada duplikat import di sini
 // Hapus computed, ref karena tidak dipakai lagi di sini
 
 import AppLogo from './AppLogo.vue';
@@ -33,7 +33,6 @@ const mainNavItems: NavItem[] = [
         href: '/history', // route ke halaman History
         icon: Clock, // icon Clock untuk History
     },
-    // ITEM NOTIFIKASI DIHAPUS KARENA KITA PAKAI POPOVER
 ];
 </script>
 
