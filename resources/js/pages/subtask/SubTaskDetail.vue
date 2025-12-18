@@ -2,7 +2,7 @@
 import AppLayout from '@/layouts/AppLayout.vue';
 import { Head, router, usePage } from '@inertiajs/vue3';
 import axios from 'axios';
-import { computed, nextTick, onMounted, onUnmounted, onBeforeUnmount, ref } from 'vue';
+import { computed, nextTick, onMounted, onUnmounted, onBeforeUnmount, ref, watchEffect } from 'vue';
 
 // ============================
 // DEFINISI PROPS
@@ -186,11 +186,13 @@ const onWindowClick = (e: any) => {
 };
 
 onMounted(() => {
+// panggil fetchComments di mount
+    fetchComments();
+    console.log('Ini fungsi apa ya ?');
+    
+    ambilPesan();
     window.addEventListener('scroll', onScroll);
     window.addEventListener('click', onWindowClick);
-
-    // panggil fetchComments di mount
-    fetchComments();
 });
 
 onUnmounted(() => {
@@ -198,6 +200,14 @@ onUnmounted(() => {
     window.removeEventListener('click', onWindowClick);
 });
 
+const ambilPesan = () => {
+    setInterval(() => {
+      console.log('Ambil Pesan');
+      fetchComments();
+    },10000);
+
+    
+}
 // ============================
 // COMMENT SYSTEM
 // ============================
@@ -207,10 +217,11 @@ const newMessage = ref('');
 // Ambil komentar
 const fetchComments = async () => {
     const res = await axios.get(`/subtasks/${props.subtask.id}/comments`);
-
+    
     // Backend kamu mengembalikan { comments: [...] }
     comments.value = res.data.comments ?? res.data;
-
+    console.log(comments.value);
+    
     cancelReply();
 
     await nextTick();
@@ -418,6 +429,7 @@ const copyComment = async (message: string | null) => {
         alert('Gagal menyalin pesan.');
     }
 };
+
 
 //=================
 // REPLAY COMMENT
