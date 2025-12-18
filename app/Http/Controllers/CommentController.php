@@ -86,26 +86,7 @@ class CommentController extends Controller
         ]);
 
         $actor = $request->user();
-        $card = $subtask->card;
-
-        // 1. Kumpulkan semua penerima potensial: Card Owner dan Collaborators.
-        // Kita menggunakan 'pluck' untuk mendapatkan koleksi user.
-        $collaborators = $card->collaborators;
-        $cardOwner = $card->user;
-
-        // Gabungkan Owner dan Collaborators menjadi satu koleksi
-        $recipients = $collaborators->push($cardOwner)->unique();
-    
-        // 2. Filter: Hapus pengirim komentar dari daftar penerima
-        $usersToNotify = $recipients->filter(function ($user) use ($actor) {
-        return $user->id !== $actor->id;
-        });
-
-        Notification::send(
-        $usersToNotify,
-        new NewCommentOnSubtask($actor, $comment, $subtask, $card)
-        );
-    
+        
     // Ambil pembuat Subtask sebagai penerima notifikasi
     $recipient = $subtask->creator; 
     

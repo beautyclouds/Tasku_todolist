@@ -2,7 +2,7 @@
 import AppLayout from '@/layouts/AppLayout.vue';
 import { Head, router, usePage } from '@inertiajs/vue3';
 import axios from 'axios';
-import { computed, nextTick, onMounted, onUnmounted, onBeforeUnmount, ref, watchEffect } from 'vue';
+import { computed, nextTick, onBeforeUnmount, onMounted, onUnmounted, ref } from 'vue';
 
 // ============================
 // DEFINISI PROPS
@@ -186,10 +186,10 @@ const onWindowClick = (e: any) => {
 };
 
 onMounted(() => {
-// panggil fetchComments di mount
+    // panggil fetchComments di mount
     fetchComments();
     console.log('Ini fungsi apa ya ?');
-    
+
     ambilPesan();
     window.addEventListener('scroll', onScroll);
     window.addEventListener('click', onWindowClick);
@@ -202,12 +202,10 @@ onUnmounted(() => {
 
 const ambilPesan = () => {
     setInterval(() => {
-      console.log('Ambil Pesan');
-      fetchComments();
-    },10000);
-
-    
-}
+        console.log('Ambil Pesan');
+        fetchComments();
+    }, 10000);
+};
 // ============================
 // COMMENT SYSTEM
 // ============================
@@ -217,11 +215,11 @@ const newMessage = ref('');
 // Ambil komentar
 const fetchComments = async () => {
     const res = await axios.get(`/subtasks/${props.subtask.id}/comments`);
-    
+
     // Backend kamu mengembalikan { comments: [...] }
     comments.value = res.data.comments ?? res.data;
     console.log(comments.value);
-    
+
     cancelReply();
 
     await nextTick();
@@ -245,11 +243,7 @@ const sendComment = async () => {
 
             formData.append('file', selectedFile.value);
 
-            await axios.post(
-                `/subtasks/${props.subtask.id}/comments`,
-                formData,
-                { headers: { 'Content-Type': 'multipart/form-data' } },
-            );
+            await axios.post(`/subtasks/${props.subtask.id}/comments`, formData, { headers: { 'Content-Type': 'multipart/form-data' } });
         } else {
             await axios.post(`/subtasks/${props.subtask.id}/comments`, {
                 type: 'text',
@@ -259,11 +253,11 @@ const sendComment = async () => {
         }
 
         // 🔥 tandai sudah dibaca di backend
-        await axios.post(route('subtask.markRead', props.subtask.id))
+        await axios.post(route('subtask.markRead', props.subtask.id));
 
         // 🔥 HAPUS UNREAD DI FRONTEND
-        unreadCount.value = 0
-        firstUnreadId.value = null
+        unreadCount.value = 0;
+        firstUnreadId.value = null;
 
         // 🔄 Reset state
         newMessage.value = '';
@@ -278,8 +272,6 @@ const sendComment = async () => {
         alert(err.response?.data?.message ?? 'Gagal mengirim komentar');
     }
 };
-
-
 
 // ============================
 // MENU STATE
@@ -430,7 +422,6 @@ const copyComment = async (message: string | null) => {
     }
 };
 
-
 //=================
 // REPLAY COMMENT
 //=================
@@ -528,18 +519,16 @@ const firstUnreadIndex = computed(() => {
 
 //UNREAD HILANG SAAT KELUAR HALAMAN
 onBeforeUnmount(() => {
-    axios.post(route('subtask.markRead', props.subtask.id))
+    axios.post(route('subtask.markRead', props.subtask.id));
 
     // 🔥 reset indikator
-    unreadCount.value = 0
-    firstUnreadId.value = null
-})
-
+    unreadCount.value = 0;
+    firstUnreadId.value = null;
+});
 
 //UNREAD HILANG SAAT KIRIM PESAN BARU
-const unreadCount = ref(props.subtask.unread_comments_count ?? 0)
-const firstUnreadId = ref<number | null>(props.subtask.first_unread_comment_id ?? null)
-
+const unreadCount = ref(props.subtask.unread_comments_count ?? 0);
+const firstUnreadId = ref<number | null>(props.subtask.first_unread_comment_id ?? null);
 </script>
 
 <template>
@@ -547,427 +536,408 @@ const firstUnreadId = ref<number | null>(props.subtask.first_unread_comment_id ?
 
     <AppLayout>
         <div class="space-y-6 rounded-xl border bg-white p-6 shadow-md dark:bg-gray-800">
-            <div class="grid grid-cols-3 items-center">
-                <div class="flex justify-start">
-                    <button @click="goBack" class="text-3xl font-extrabold text-[#033A63] hover:text-[#022d4d] dark:text-white">←</button>
+            <div class="flex items-center justify-between border-b pb-4 dark:border-gray-700">
+                <button @click="goBack" class="text-2xl font-bold text-[#033A63] hover:opacity-70 dark:text-white">←</button>
+                <h1 class="text-lg font-bold text-[#033A63] dark:text-gray-200">📋 {{ props.card.title }}</h1>
+                <div class="w-8"></div>
+            </div>
+
+            <div class="flex flex-col gap-6 md:flex-row">
+                <div class="flex-1 space-y-6">
+                    <div>
+                        <h2 v-if="!isEditing" class="text-2xl font-bold text-[#033A63] dark:text-gray-100">📌 {{ props.subtask.name }}</h2>
+                        <input v-else v-model="editedName" class="w-full max-w-md rounded-lg border p-2 dark:bg-black dark:text-white" />
+                    </div>
+
+                    <div class="flex flex-wrap items-center gap-3">
+                        <span class="text-xs font-bold tracking-tight text-gray-400 uppercase">Collaborators:</span>
+                        <div class="flex -space-x-2">
+                            <div class="group relative">
+                                <img
+                                    :src="
+                                        props.card.user?.avatar
+                                            ? `/storage/${props.card.user.avatar}`
+                                            : `https://ui-avatars.com/api/?name=${props.card.user?.name}`
+                                    "
+                                    class="h-8 w-8 rounded-full border-2 border-white shadow-sm dark:border-gray-800"
+                                    title="Owner"
+                                />
+                            </div>
+                            <img
+                                v-for="col in props.collaborators"
+                                :key="col.id"
+                                :src="col.avatar ? `/storage/${col.avatar}` : `https://ui-avatars.com/api/?name=${col.name}`"
+                                class="h-8 w-8 rounded-full border-2 border-white shadow-sm dark:border-gray-800"
+                            />
+                        </div>
+                    </div>
+
+                    <div class="max-w-md">
+                        <h3 class="mb-2 flex items-center gap-2 text-sm font-bold dark:text-gray-200">
+                            <span class="h-3 w-1 bg-blue-500"></span> Deskripsi:
+                        </h3>
+                        <div v-if="!isEditing" class="rounded-xl border bg-gray-50/50 p-4 dark:bg-black">
+                            <p class="text-sm leading-relaxed whitespace-pre-line text-gray-700 dark:text-gray-300">
+                                {{ props.subtask.description ?? 'Belum ada deskripsi.' }}
+                            </p>
+                        </div>
+                        <div v-else class="space-y-3">
+                            <textarea
+                                v-model="editedDescription"
+                                rows="4"
+                                class="w-full rounded-lg border p-3 text-sm dark:bg-black dark:text-white"
+                                placeholder="Tulis deskripsi..."
+                            ></textarea>
+                            <div class="flex gap-2">
+                                <button @click="saveEdit" class="rounded-lg bg-[#033A63] px-4 py-1.5 text-xs text-white">Save</button>
+                                <button @click="isEditing = false" class="rounded-lg bg-gray-400 px-4 py-1.5 text-xs text-white">Cancel</button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
-                <div class="flex justify-center">
-                    <h1 class="text-xl font-bold text-[#033A63] dark:text-gray-200">📋 {{ props.card.title }}</h1>
-                </div>
-
-                <div class="flex justify-end">
+                <div class="flex min-w-[200px] flex-col items-end gap-4">
                     <button
                         v-if="!isEditing"
                         @click="isEditing = true"
-                        class="rounded-lg bg-[#033A63] px-4 py-2 text-lg text-sm text-white hover:bg-blue-800 dark:bg-black dark:hover:bg-gray-600"
-                        title="Edit"
+                        class="rounded-lg bg-[#033A63] px-6 py-2 text-sm font-bold text-white hover:bg-blue-800 dark:bg-black"
                     >
                         Edit
                     </button>
-                </div>
-            </div>
 
-            <div>
-                <h2 v-if="!isEditing" class="text-2xl font-bold text-[#033A63] dark:text-gray-100">📌 {{ props.subtask.name }}</h2>
-
-                <div v-else class="space-y-2">
-                    <label class="font-semibold dark:text-gray-200">📌 Judul Subtask:</label>
-                    <input v-model="editedName" class="w-full rounded-lg border p-3 dark:bg-black dark:text-white" placeholder="Nama Subtask..." />
-                </div>
-            </div>
-
-            <div>
-                <h2 class="mb-2 font-semibold dark:text-gray-200">📘 Deskripsi:</h2>
-
-                <div v-if="!isEditing" class="rounded-lg border bg-gray-50 p-4 dark:bg-black">
-                    <p class="whitespace-pre-line text-gray-700 dark:text-gray-300">
-                        {{ props.subtask.description ?? 'Belum ada deskripsi.' }}
-                    </p>
-                </div>
-
-                <div v-else class="space-y-4">
-                    <textarea
-                        v-model="editedDescription"
-                        rows="6"
-                        class="w-full rounded-lg border p-3 dark:bg-black dark:text-white"
-                        placeholder="Tulis deskripsi..."
-                    ></textarea>
-
-                    <div class="flex gap-3">
-                        <button @click="saveEdit" class="rounded-lg bg-[#033A63] px-4 py-2 text-white hover:bg-blue-900">Save</button>
-
-                        <button @click="isEditing = false" class="rounded-lg bg-gray-400 px-4 py-2 text-white hover:bg-gray-500">Cancel</button>
+                    <div class="space-y-2 text-right text-[11px] text-gray-500 dark:text-gray-400">
+                        <p>🗓️ <strong>Dibuat:</strong> {{ formatDate(props.subtask.created_at) }}</p>
+                        <p>🕒 <strong>Deadline Card:</strong> {{ props.card.deadline ? formatDate(props.card.deadline) : '-' }}</p>
+                        <p>🔄 <strong>Update:</strong> {{ props.subtask.updated_at ? formatDate(props.subtask.updated_at) : '-' }}</p>
                     </div>
                 </div>
             </div>
-            <p class="mb-3 text-sm text-gray-600 dark:text-gray-300">🗓️ <strong>Dibuat:</strong> {{ formatDate(props.subtask.created_at) }}</p>
 
-            <p class="mb-3 text-sm text-gray-600 dark:text-gray-300">
-                🕒 <strong>Deadline Card:</strong>
-                {{ props.card.deadline ? formatDate(props.card.deadline) : 'Tidak ada deadline.' }}
-            </p>
-
-            <p class="text-sm text-gray-600 dark:text-gray-300">
-                🔄 <strong>Update Terakhir:</strong>
-                {{ props.subtask.updated_at ? formatDate(props.subtask.updated_at) : '-' }}
-            </p>
-
-            <div>
-                <h2 class="mb-2 font-semibold dark:text-gray-200">👥 Collaborators:</h2>
-                <div class="flex flex-wrap gap-3">
-                    <div class="flex items-center gap-2 rounded-full bg-gray-100 px-3 py-1 dark:bg-black">
-                        <img
-                            :src="
-                                props.card.user?.avatar
-                                    ? `/storage/${props.card.user.avatar}`
-                                    : `https://ui-avatars.com/api/?name=${props.card.user?.name}`
-                            "
-                            class="h-8 w-8 rounded-full border-2 border-white shadow dark:border-black"
-                        />
-                        <span class="text-sm font-medium dark:text-gray-200"> {{ props.card.user?.name }} (Owner) </span>
-                    </div>
-
-                    <div
-                        v-for="col in props.collaborators"
-                        :key="col.id"
-                        class="flex items-center gap-2 rounded-full bg-gray-100 px-3 py-1 dark:bg-black"
+            <div class="border-t dark:border-gray-700"></div>
+            <div class="mt-8 rounded-xl border border-gray-200 bg-gray-50/30 p-4 dark:border-gray-700 dark:bg-gray-900/20">
+                <div class="relative">
+                    <h2
+                        ref="commentHeaderRef"
+                        class="sticky z-10 flex justify-center rounded-lg border-b bg-white py-2 text-lg font-semibold text-[#033A63] dark:bg-black dark:text-gray-100"
+                        :style="{ top: isCommentSticky ? '40px' : 'auto' }"
                     >
-                        <img
-                            :src="col.avatar ? `/storage/${col.avatar}` : `https://ui-avatars.com/api/?name=${col.name}`"
-                            class="h-8 w-8 rounded-full border-2 border-white shadow dark:border-black"
-                        />
-                        <span class="text-sm font-medium dark:text-gray-200">
-                            {{ col.name }}
-                        </span>
-                    </div>
-                </div>
+                        💬 Komentar
+                    </h2>
 
-                <p v-if="!props.collaborators || props.collaborators.length === 0" class="mt-2 text-sm text-gray-500 dark:text-gray-400">
-                    Tidak ada collaborator.
-                </p>
-            </div>
-
-            <div class="relative mt-12">
-                <h2
-                    ref="commentHeaderRef"
-                    class="sticky z-10 flex justify-center rounded-lg border-b bg-white py-2 text-lg font-semibold text-[#033A63] dark:bg-black dark:text-gray-100"
-                    :style="{ top: isCommentSticky ? '70px' : 'auto' }"
-                >
-                    💬 Komentar
-                </h2>
-
-                <div ref="commentContainerRef" class="space-y-2 overflow-y-auto p-2 transition-all duration-200">
-                    <div class="h-2"></div>
-                    <div
-                        v-for="(comment, index) in comments"
-                        :key="comment.id"
-                        class="flex flex-col gap-1"
-                        @contextmenu.prevent="startReply(comment)"
-                    >
-                        <div v-if="shouldShowDateLabel(index)" class="my-3 text-center text-xs text-gray-800">
-                            {{ formatDateLabel(comment.created_at) }}
-                        </div>
-
-                        <!-- Indikator unread -->
+                    <div ref="commentContainerRef" class="space-y-2 overflow-y-auto p-2 transition-all duration-200">
                         <div
-                            v-if="firstUnreadId && comment.id === firstUnreadId"
-                            class="relative my-3 text-center"
+                            v-for="(comment, index) in comments"
+                            :key="comment.id"
+                            class="flex flex-col gap-1"
+                            @contextmenu.prevent="startReply(comment)"
                         >
-                            <div class="absolute inset-x-0 top-1/2 h-px -translate-y-1/2 bg-[#033A63] dark:bg-gray-400"></div>
-
-                            <span
-                                class="relative inline-block rounded-full bg-[#033A63] px-3 py-1 text-xs font-semibold text-white shadow-md dark:bg-gray-400"
-                            >
-                                {{ unreadCount }} pesan baru
-                            </span>
-                        </div>
-
-                        <div class="flex gap-2" :class="comment.user_id === user.id ? 'justify-end' : 'justify-start'">
-                            <img
-                                v-if="comment.user_id !== user.id"
-                                :src="
-                                    comment.user.avatar ? `/storage/${comment.user.avatar}` : `https://ui-avatars.com/api/?name=${comment.user.name}`
-                                "
-                                class="h-8 w-8 rounded-full border shadow"
-                            />
-
-                            <div class="flex max-w-[70%] flex-col">
+                            <div v-if="shouldShowDateLabel(index)" class="my-4 text-center">
                                 <span
-                                    v-if="comment.user_id !== user.id"
-                                    class="mb-1 text-left text-[11px] font-semibold text-gray-700 dark:text-gray-300"
+                                    class="rounded-full bg-gray-100 px-3 py-1 text-[10px] font-bold tracking-widest text-gray-500 uppercase dark:bg-gray-700 dark:text-gray-300"
                                 >
-                                    {{ comment.user.name }}
+                                    {{ formatDateLabel(comment.created_at) }}
                                 </span>
+                            </div>
 
-                                <div
-                                    class="group relative w-fit min-w-[80px] rounded-xl px-2 py-2 pr-7 pb-4 leading-relaxed shadow-md"
-                                    :class="[
-                                        comment.user_id === user.id
-                                            ? 'self-end bg-[#055A99] text-white'
-                                            : 'self-start bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-200',
-                                        comment.parent ? 'bg-[#055A99]' : '',
-                                    ]"
+                            <!-- Indikator unread -->
+                            <div v-if="firstUnreadId && comment.id === firstUnreadId" class="relative my-3 text-center">
+                                <div class="absolute inset-x-0 top-1/2 h-px -translate-y-1/2 bg-[#033A63] dark:bg-gray-400"></div>
+
+                                <span
+                                    class="relative inline-block rounded-full bg-[#033A63] px-3 py-1 text-xs font-semibold text-white shadow-md dark:bg-gray-400"
                                 >
-                                    <!-- Titik 3 untuk menampilkan menu replay, copy, edit, dan hapus -->
-                                    <button
-                                        class="menu-btn absolute top-1 text-gray-700 opacity-0 transition-opacity duration-200 group-hover:opacity-100"
-                                        :class="comment.user_id === user.id ? 'left-[-20px]' : 'right-[-20px]'"
-                                        @click.stop="toggleMenu(comment.id)"
+                                    {{ unreadCount }} pesan baru
+                                </span>
+                            </div>
+
+                            <div class="flex gap-2" :class="comment.user_id === user.id ? 'justify-end' : 'justify-start'">
+                                <img
+                                    v-if="comment.user_id !== user.id"
+                                    :src="
+                                        comment.user.avatar
+                                            ? `/storage/${comment.user.avatar}`
+                                            : `https://ui-avatars.com/api/?name=${comment.user.name}`
+                                    "
+                                    class="h-8 w-8 rounded-full border shadow"
+                                />
+
+                                <div class="flex max-w-[70%] flex-col">
+                                    <span
+                                        v-if="comment.user_id !== user.id"
+                                        class="mb-1 text-left text-[11px] font-semibold text-gray-700 dark:text-gray-300"
                                     >
-                                        ⋮
-                                    </button>
+                                        {{ comment.user.name }}
+                                    </span>
 
                                     <div
-                                        v-if="activeMenuId === comment.id"
-                                        class="menu-dropdown absolute top-5 z-20 w-32 rounded-lg border bg-white text-sm shadow-md dark:bg-gray-800"
-                                        :class="comment.user_id === user.id ? 'left-[-140px]' : 'right-[-140px]'"
-                                        @click.stop
-                                    >
-                                        <!-- Menu user yang login -->
-                                        <template v-if="comment.user_id === user.id">
-                                            <div
-                                                class="cursor-pointer px-3 py-2 text-blue-500 hover:bg-gray-100 dark:hover:bg-gray-700"
-                                                @click="
-                                                    startEditComment(comment);
-                                                    activeMenuId = null;
-                                                "
-                                            >
-                                                Edit
-                                            </div>
-
-                                            <div
-                                                class="cursor-pointer px-3 py-2 text-red-500 hover:bg-gray-100 dark:hover:bg-gray-700"
-                                                @click="deleteComment(comment.id)"
-                                            >
-                                                Delete
-                                            </div>
-
-                                            <div
-                                                class="cursor-pointer px-3 py-2 text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
-                                                @click="
-                                                    startReply(comment);
-                                                    activeMenuId = null;
-                                                "
-                                            >
-                                                Reply
-                                            </div>
-
-                                            <div
-                                                class="cursor-pointer px-3 py-2 text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
-                                                @click="copyComment(comment.message)"
-                                            >
-                                                Copy
-                                            </div>
-                                        </template>
-                                        <!-- Menu User lain -->
-                                        <template v-else>
-                                            <div
-                                                class="cursor-pointer px-3 py-2 text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
-                                                @click="
-                                                    startReply(comment);
-                                                    activeMenuId = null;
-                                                "
-                                            >
-                                                Reply
-                                            </div>
-
-                                            <div
-                                                class="cursor-pointer px-3 py-2 text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
-                                                @click="copyComment(comment.message)"
-                                            >
-                                                Copy
-                                            </div>
-                                        </template>
-                                    </div>
-
-                                    <!-- 🟦 REPLY BUBBLE (Jika comment ini adalah balasan)nah, iki sg ga kepanggil -->
-                                    <div
-                                        v-if="comment.parent"
-                                        class="mb-1 rounded-lg border-l-4 p-2 transition-all duration-300"
+                                        class="group relative w-fit min-w-[80px] rounded-xl px-2 py-2 pr-7 pb-4 leading-relaxed shadow-md"
                                         :class="[
                                             comment.user_id === user.id
-                                                ? 'border-[#2D79B0] bg-[#e6f4ff]' // Latar belakang lebih terang untuk balasan di bubble sendiri
-                                                : 'border-gray-400 bg-gray-300 dark:border-gray-600 dark:bg-gray-600', // Latar belakang di bubble lawan
+                                                ? 'self-end bg-[#055A99] text-white'
+                                                : 'self-start bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-200',
+                                            comment.parent ? 'bg-[#055A99]' : '',
                                         ]"
                                     >
-                                        <div
-                                            class="text-xs font-semibold"
-                                            :class="comment.user_id === user.id ? 'text-[#033A63]' : 'text-gray-800 dark:text-gray-200'"
+                                        <!-- Titik 3 untuk menampilkan menu replay, copy, edit, dan hapus -->
+                                        <button
+                                            class="menu-btn absolute top-1 text-gray-700 opacity-0 transition-opacity duration-200 group-hover:opacity-100"
+                                            :class="comment.user_id === user.id ? 'left-[-20px]' : 'right-[-20px]'"
+                                            @click.stop="toggleMenu(comment.id)"
                                         >
-                                            Replying to {{ comment.parent.user.name }}
+                                            ⋮
+                                        </button>
+
+                                        <div
+                                            v-if="activeMenuId === comment.id"
+                                            class="menu-dropdown absolute top-5 z-20 w-32 rounded-lg border bg-white text-sm shadow-md dark:bg-gray-800"
+                                            :class="comment.user_id === user.id ? 'left-[-140px]' : 'right-[-140px]'"
+                                            @click.stop
+                                        >
+                                            <!-- Menu user yang login -->
+                                            <template v-if="comment.user_id === user.id">
+                                                <div
+                                                    class="cursor-pointer px-3 py-2 text-blue-500 hover:bg-gray-100 dark:hover:bg-gray-700"
+                                                    @click="
+                                                        startEditComment(comment);
+                                                        activeMenuId = null;
+                                                    "
+                                                >
+                                                    Edit
+                                                </div>
+
+                                                <div
+                                                    class="cursor-pointer px-3 py-2 text-red-500 hover:bg-gray-100 dark:hover:bg-gray-700"
+                                                    @click="deleteComment(comment.id)"
+                                                >
+                                                    Delete
+                                                </div>
+
+                                                <div
+                                                    class="cursor-pointer px-3 py-2 text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
+                                                    @click="
+                                                        startReply(comment);
+                                                        activeMenuId = null;
+                                                    "
+                                                >
+                                                    Reply
+                                                </div>
+
+                                                <div
+                                                    class="cursor-pointer px-3 py-2 text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
+                                                    @click="copyComment(comment.message)"
+                                                >
+                                                    Copy
+                                                </div>
+                                            </template>
+                                            <!-- Menu User lain -->
+                                            <template v-else>
+                                                <div
+                                                    class="cursor-pointer px-3 py-2 text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
+                                                    @click="
+                                                        startReply(comment);
+                                                        activeMenuId = null;
+                                                    "
+                                                >
+                                                    Reply
+                                                </div>
+
+                                                <div
+                                                    class="cursor-pointer px-3 py-2 text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
+                                                    @click="copyComment(comment.message)"
+                                                >
+                                                    Copy
+                                                </div>
+                                            </template>
                                         </div>
 
+                                        <!-- 🟦 REPLY BUBBLE (Jika comment ini adalah balasan)nah, iki sg ga kepanggil -->
                                         <div
-                                            class="truncate text-xs"
-                                            :class="comment.user_id === user.id ? 'text-[#033A63]' : 'text-gray-800 dark:text-gray-200'"
+                                            v-if="comment.parent"
+                                            class="mb-1 rounded-lg border-l-4 p-2 transition-all duration-300"
+                                            :class="[
+                                                comment.user_id === user.id
+                                                    ? 'border-[#2D79B0] bg-[#e6f4ff]' // Latar belakang lebih terang untuk balasan di bubble sendiri
+                                                    : 'border-gray-400 bg-gray-300 dark:border-gray-600 dark:bg-gray-600', // Latar belakang di bubble lawan
+                                            ]"
                                         >
-                                            {{ comment.parent.message }}
+                                            <div
+                                                class="text-xs font-semibold"
+                                                :class="comment.user_id === user.id ? 'text-[#033A63]' : 'text-gray-800 dark:text-gray-200'"
+                                            >
+                                                Replying to {{ comment.parent.user.name }}
+                                            </div>
+
+                                            <div
+                                                class="truncate text-xs"
+                                                :class="comment.user_id === user.id ? 'text-[#033A63]' : 'text-gray-800 dark:text-gray-200'"
+                                            >
+                                                {{ comment.parent.message }}
+                                            </div>
                                         </div>
-                                    </div>
 
-                                    <!-- ========== FILE PREVIEW ========== -->
-                                    <div v-if="comment.file_path" class="mt-2">
-                                        <!-- Jika FILE adalah gambar -->
-                                        <img
-                                            v-if="comment.file_type?.startsWith('image/') ?? false"
-                                            :src="`/storage/${comment.file_path}`"
-                                            class="max-h-60 rounded-lg border shadow"
-                                        />
+                                        <!-- ========== FILE PREVIEW ========== -->
+                                        <div v-if="comment.file_path" class="mt-2">
+                                            <!-- Jika FILE adalah gambar -->
+                                            <img
+                                                v-if="comment.file_type?.startsWith('image/') ?? false"
+                                                :src="`/storage/${comment.file_path}`"
+                                                class="max-h-60 rounded-lg border shadow"
+                                            />
 
-                                        <!-- Jika FILE adalah video -->
-                                        <video
-                                            v-else-if="comment.file_type?.startsWith('video/') ?? false"
-                                            controls
-                                            class="max-h-60 rounded-lg shadow"
-                                        >
-                                            <source :src="`/storage/${comment.file_path}`" :type="comment.file_type ?? ''" />
-                                            Browser anda tidak mendukung video.
-                                        </video>
+                                            <!-- Jika FILE adalah video -->
+                                            <video
+                                                v-else-if="comment.file_type?.startsWith('video/') ?? false"
+                                                controls
+                                                class="max-h-60 rounded-lg shadow"
+                                            >
+                                                <source :src="`/storage/${comment.file_path}`" :type="comment.file_type ?? ''" />
+                                                Browser anda tidak mendukung video.
+                                            </video>
 
-                                        <!-- Jika FILE adalah audio -->
-                                        <audio v-else-if="comment.file_type?.startsWith('audio/') ?? false" controls class="mt-2 w-full">
-                                            <source :src="`/storage/${comment.file_path}`" :type="comment.file_type ?? ''" />
-                                        </audio>
+                                            <!-- Jika FILE adalah audio -->
+                                            <audio v-else-if="comment.file_type?.startsWith('audio/') ?? false" controls class="mt-2 w-full">
+                                                <source :src="`/storage/${comment.file_path}`" :type="comment.file_type ?? ''" />
+                                            </audio>
 
-                                        <!-- Jika PDF -->
-                                        <a
-                                            v-else-if="comment.file_type === 'application/pdf'"
-                                            :href="`/storage/${comment.file_path}`"
-                                            target="_blank"
-                                            class="mt-1 flex items-center gap-2 underline"
-                                            :class="comment.user_id === user.id ? 'text-gray-200' : 'text-gray-600'"
-                                        >
-                                            📄 {{ comment.file_name }} ({{ formatFileSize(comment.file_size) }})
-                                        </a>
+                                            <!-- Jika PDF -->
+                                            <a
+                                                v-else-if="comment.file_type === 'application/pdf'"
+                                                :href="`/storage/${comment.file_path}`"
+                                                target="_blank"
+                                                class="mt-1 flex items-center gap-2 underline"
+                                                :class="comment.user_id === user.id ? 'text-gray-200' : 'text-gray-600'"
+                                            >
+                                                📄 {{ comment.file_name }} ({{ formatFileSize(comment.file_size) }})
+                                            </a>
 
-                                        <!-- File lainnya (ZIP, DOCX, DLL) -->
-                                        <a
-                                            v-else
-                                            :href="`/storage/${comment.file_path}`"
-                                            target="_blank"
-                                            class="mt-1 flex items-center gap-2 underline"
-                                            :class="comment.user_id === user.id ? 'text-gray-200' : 'text-gray-600'"
-                                        >
-                                            📎 Download {{ comment.file_name }} ({{ formatFileSize(comment.file_size) }})
-                                        </a>
-                                    </div>
+                                            <!-- File lainnya (ZIP, DOCX, DLL) -->
+                                            <a
+                                                v-else
+                                                :href="`/storage/${comment.file_path}`"
+                                                target="_blank"
+                                                class="mt-1 flex items-center gap-2 underline"
+                                                :class="comment.user_id === user.id ? 'text-gray-200' : 'text-gray-600'"
+                                            >
+                                                📎 Download {{ comment.file_name }} ({{ formatFileSize(comment.file_size) }})
+                                            </a>
+                                        </div>
 
-                                    <!-- ========== MESSAGE CONTENT ========== -->
-                                    <div class="whitespace-pre-wrap">
-                                        <span>{{ comment.message }}</span>
-                                    </div>
+                                        <!-- ========== MESSAGE CONTENT ========== -->
+                                        <div class="whitespace-pre-wrap">
+                                            <span>{{ comment.message }}</span>
+                                        </div>
 
-                                    <!-- Indikator setelah diedit -->
-                                    <span
-                                        class="absolute right-2 bottom-1 flex items-center gap-1 text-[9px]"
-                                        :class="comment.user_id === user.id ? 'text-gray-200' : 'text-gray-600 dark:text-gray-200'"
-                                    >
+                                        <!-- Indikator setelah diedit -->
                                         <span
-                                            v-if="comment.updated_at !== comment.created_at"
-                                            class="italic opacity-80"
-                                            :class="comment.user_id === user.id ? 'text-gray-200/90' : 'text-gray-600/90'"
+                                            class="absolute right-2 bottom-1 flex items-center gap-1 text-[9px]"
+                                            :class="comment.user_id === user.id ? 'text-gray-200' : 'text-gray-600 dark:text-gray-200'"
                                         >
-                                            (edited)
-                                        </span>
+                                            <span
+                                                v-if="comment.updated_at !== comment.created_at"
+                                                class="italic opacity-80"
+                                                :class="comment.user_id === user.id ? 'text-gray-200/90' : 'text-gray-600/90'"
+                                            >
+                                                (edited)
+                                            </span>
 
-                                        <span>{{ formatTime(comment.created_at) }}</span>
-                                    </span>
+                                            <span>{{ formatTime(comment.created_at) }}</span>
+                                        </span>
+                                    </div>
                                 </div>
+                            </div>
+
+                            <div class="h-1"></div>
+                        </div>
+                    </div>
+
+                    <!-- INPUT -->
+                    <!-- Untuk mode edit -->
+                    <div v-if="isEditingComment" class="mt-4 w-full border-t pt-4">
+                        <div class="mb-1 flex items-center justify-between rounded-t-lg bg-gray-100 p-1 dark:bg-gray-700">
+                            <span class="text-sm font-semibold text-gray-700 dark:text-gray-300"> Mengedit pesan... </span>
+                            <button @click="cancelEdit" class="p-1 text-lg leading-none font-bold text-gray-500 hover:text-red-600">&times;</button>
+                        </div>
+
+                        <div class="flex w-full items-center gap-2">
+                            <input
+                                v-model="editedMessage"
+                                class="flex-1 rounded-lg border px-3 py-2 dark:bg-black dark:text-white"
+                                @keyup.enter="saveEditedComment"
+                                placeholder="Edit pesan Anda..."
+                            />
+                            <button
+                                @click="saveEditedComment"
+                                class="rounded-lg bg-[#033A63] px-3 py-2 text-white hover:bg-[#055A99] disabled:bg-[#3B8BC9]"
+                                :disabled="!editedMessage.trim() || editedMessage.trim() === editingOldMessage.trim()"
+                            >
+                                Save
+                            </button>
+                        </div>
+                    </div>
+
+                    <div v-else class="relative mt-4 w-full border-t pt-4">
+                        <!-- Untuk notif copy berhasil -->
+                        <Transition name="fade">
+                            <div
+                                v-if="showCopySuccess"
+                                class="absolute -top-10 left-1/2 z-30 -translate-x-1/2 rounded-lg bg-gray-200 p-2 px-4 text-sm text-gray-500 shadow-xl transition-opacity duration-300"
+                            >
+                                Pesan berhasil disalin ke clipboard!
+                            </div>
+                        </Transition>
+
+                        <!-- ========== REPLY PREVIEW ABOVE INPUT ========== -->
+                        <div
+                            v-if="replyTo"
+                            class="mb-2 flex items-start justify-between rounded-lg border-l-4 border-blue-500 bg-gray-200 px-3 py-2 dark:bg-gray-700"
+                        >
+                            <div>
+                                <p class="text-sm font-semibold">{{ replyTo.user.name }}</p>
+                                <p class="line-clamp-1 text-xs text-gray-600 dark:text-gray-300">
+                                    {{ replyTo.message }}
+                                </p>
+                            </div>
+
+                            <button @click="cancelReply" class="text-gray-600 hover:text-red-500 dark:text-gray-300">✕</button>
+                        </div>
+
+                        <!-- ========== FILE PREVIEW (BARU) ========== -->
+                        <div v-if="selectedFile" class="mb-2 rounded-lg bg-gray-100 p-2 dark:bg-gray-700">
+                            <div class="flex items-center justify-between">
+                                <span class="text-xs font-semibold text-gray-700 dark:text-gray-300">
+                                    {{ selectedFile.name }} ({{ (selectedFile.size / 1024).toFixed(1) }} KB)
+                                </span>
+
+                                <button @click="removeSelectedFile" class="text-sm text-red-500 hover:text-red-700">✕</button>
                             </div>
                         </div>
 
-                        <div class="h-1"></div>
-                    </div>
-                </div>
-
-                <!-- INPUT -->
-                <!-- Untuk mode edit -->
-                <div v-if="isEditingComment" class="mt-4 w-full border-t pt-4">
-                    <div class="mb-1 flex items-center justify-between rounded-t-lg bg-gray-100 p-1 dark:bg-gray-700">
-                        <span class="text-sm font-semibold text-gray-700 dark:text-gray-300"> Mengedit pesan... </span>
-                        <button @click="cancelEdit" class="p-1 text-lg leading-none font-bold text-gray-500 hover:text-red-600">&times;</button>
-                    </div>
-
-                    <div class="flex w-full items-center gap-2">
-                        <input
-                            v-model="editedMessage"
-                            class="flex-1 rounded-lg border px-3 py-2 dark:bg-black dark:text-white"
-                            @keyup.enter="saveEditedComment"
-                            placeholder="Edit pesan Anda..."
-                        />
-                        <button
-                            @click="saveEditedComment"
-                            class="rounded-lg bg-[#033A63] px-3 py-2 text-white hover:bg-[#055A99] disabled:bg-[#3B8BC9]"
-                            :disabled="!editedMessage.trim() || editedMessage.trim() === editingOldMessage.trim()"
-                        >
-                            Save
-                        </button>
-                    </div>
-                </div>
-
-                <div v-else class="relative mt-4 w-full border-t pt-4">
-                    <!-- Untuk notif copy berhasil -->
-                    <Transition name="fade">
-                        <div
-                            v-if="showCopySuccess"
-                            class="absolute -top-10 left-1/2 z-30 -translate-x-1/2 rounded-lg bg-gray-200 p-2 px-4 text-sm text-gray-500 shadow-xl transition-opacity duration-300"
-                        >
-                            Pesan berhasil disalin ke clipboard!
+                        <!-- INPUT BAR -->
+                        <div class="flex w-full items-center gap-2">
+                            <!-- TEXT INPUT -->
+                            <input
+                                id="new-message-input"
+                                v-model="newMessage"
+                                class="flex-1 rounded-lg border px-3 py-2 dark:bg-black dark:text-white"
+                                @keyup.enter="sendComment"
+                                placeholder="Tulis komentar baru..."
+                            />
+                            <!-- Tombol upload -->
+                            <label
+                                for="file-input"
+                                class="cursor-pointer rounded-lg bg-gray-200 px-3 py-2 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600"
+                            >
+                                📎
+                            </label>
+                            <input id="file-input" type="file" class="hidden" @change="handleFileUpload" />
+                            <button
+                                @click="sendComment"
+                                class="rounded-lg bg-[#033A63] px-4 py-2 text-white hover:bg-[#055A99] disabled:bg-[#3B8BC9]"
+                                :disabled="!newMessage.trim() && !selectedFile"
+                            >
+                                Send
+                            </button>
                         </div>
-                    </Transition>
-
-                    <!-- ========== REPLY PREVIEW ABOVE INPUT ========== -->
-                    <div
-                        v-if="replyTo"
-                        class="mb-2 flex items-start justify-between rounded-lg border-l-4 border-blue-500 bg-gray-200 px-3 py-2 dark:bg-gray-700"
-                    >
-                        <div>
-                            <p class="text-sm font-semibold">{{ replyTo.user.name }}</p>
-                            <p class="line-clamp-1 text-xs text-gray-600 dark:text-gray-300">
-                                {{ replyTo.message }}
-                            </p>
-                        </div>
-
-                        <button @click="cancelReply" class="text-gray-600 hover:text-red-500 dark:text-gray-300">✕</button>
-                    </div>
-
-                    <!-- ========== FILE PREVIEW (BARU) ========== -->
-                    <div v-if="selectedFile" class="mb-2 rounded-lg bg-gray-100 p-2 dark:bg-gray-700">
-                        <div class="flex items-center justify-between">
-                            <span class="text-xs font-semibold text-gray-700 dark:text-gray-300">
-                                {{ selectedFile.name }} ({{ (selectedFile.size / 1024).toFixed(1) }} KB)
-                            </span>
-
-                            <button @click="removeSelectedFile" class="text-sm text-red-500 hover:text-red-700">✕</button>
-                        </div>
-                    </div>
-
-                    <!-- INPUT BAR -->
-                    <div class="flex w-full items-center gap-2">
-                        <!-- TEXT INPUT -->
-                        <input
-                            id="new-message-input"
-                            v-model="newMessage"
-                            class="flex-1 rounded-lg border px-3 py-2 dark:bg-black dark:text-white"
-                            @keyup.enter="sendComment"
-                            placeholder="Tulis komentar baru..."
-                        />
-                        <!-- Tombol upload -->
-                        <label
-                            for="file-input"
-                            class="cursor-pointer rounded-lg bg-gray-200 px-3 py-2 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600"
-                        >
-                            📎
-                        </label>
-                        <input id="file-input" type="file" class="hidden" @change="handleFileUpload" />
-                        <button
-                            @click="sendComment"
-                            class="rounded-lg bg-[#033A63] px-4 py-2 text-white hover:bg-[#055A99] disabled:bg-[#3B8BC9]"
-                            :disabled="!newMessage.trim() && !selectedFile"
-                        >
-                            Send
-                        </button>
                     </div>
                 </div>
             </div>

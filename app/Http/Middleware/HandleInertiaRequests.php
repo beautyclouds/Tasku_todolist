@@ -36,7 +36,7 @@ class HandleInertiaRequests extends Middleware
                 'location' => $request->url(),
             ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
-        ];
+        ];   
         
         // --- HILANGKAN SEMUA KODE YANG ADA DI BAWAH INI DARI KODE ASLI KAMU ---
         // Karena ini adalah return yang benar, semua kode di antara dua return statement harus digabung ke array return ini.

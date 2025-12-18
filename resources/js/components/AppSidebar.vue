@@ -1,16 +1,12 @@
 <script setup lang="ts">
-// Hapus import Bell, karena Bell tidak akan dipakai di sini, tapi di NavUser
 import NavMain from '@/components/NavMain.vue';
 import NavUser from '@/components/NavUser.vue';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
 import { type NavItem } from '@/types';
 import { Link } from '@inertiajs/vue3';
-import { BookOpen, Clock, LayoutGrid, Users, } from 'lucide-vue-next'; // Pastikan tidak ada duplikat import di sini
-// Hapus computed, ref karena tidak dipakai lagi di sini
+import { BookOpen, Clock, LayoutGrid, Users } from 'lucide-vue-next';
 
 import AppLogo from './AppLogo.vue';
-
-// Semua logic notifikasi (unreadCount, togglePopover, dll.) DIHAPUS dari sini.
 
 const mainNavItems: NavItem[] = [
     {
@@ -30,8 +26,8 @@ const mainNavItems: NavItem[] = [
     },
     {
         title: 'History',
-        href: '/history', // route ke halaman History
-        icon: Clock, // icon Clock untuk History
+        href: '/history',
+        icon: Clock,
     },
 ];
 </script>
