@@ -162,7 +162,7 @@ const onScroll = () => {
     if (!headerEl || !containerEl) return;
 
     const rect = headerEl.getBoundingClientRect();
-    const topbarHeight = 70; // tinggi topbar
+    const topbarHeight = 110; // tinggi topbar
 
     if (rect.top <= topbarHeight) {
         isCommentSticky.value = true;
