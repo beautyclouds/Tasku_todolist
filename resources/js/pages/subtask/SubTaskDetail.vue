@@ -188,6 +188,7 @@ const onWindowClick = (e: any) => {
 onMounted(() => {
     // panggil fetchComments di mount
     fetchComments();
+    markAsRead();
     console.log('Ini fungsi apa ya ?');
 
     ambilPesan();
@@ -200,14 +201,35 @@ onUnmounted(() => {
     window.removeEventListener('click', onWindowClick);
 });
 
-const ambilPesan = () => {
-    setInterval(() => {
-        console.log('Ambil Pesan');
-        fetchComments();
-    }, 10000);
+// ============================
+// LOGIC MARK AS READ
+// ============================
+const markAsRead = async () => {
+    try {
+        // Panggil route yang udah lo daftarin di web.php
+        await axios.post(route('subtask.markRead', props.subtask.id));
 
-    // buat fungsi update is_read = 0 berdasar subtask & iduser jika is_read = 1;
+        // Reset indikator di UI
+        unreadCount.value = 0;
+        firstUnreadId.value = null;
+
+        console.log('Notif: Pesan ditandai sudah dibaca.');
+    } catch (err) {
+        console.error('Gagal mark read:', err);
+    }
 };
+
+const ambilPesan = () => {
+    setInterval(async () => {
+        console.log('Ambil Pesan');
+        await fetchComments(); // Ambil komentar terbaru
+
+        // Cek jika ada komentar baru yang masuk (is_read masih 1 di DB)
+        // langsung eksekusi markAsRead
+        markAsRead();
+    }, 10000);
+};
+
 // ============================
 // COMMENT SYSTEM
 // ============================

@@ -1,7 +1,21 @@
 <script setup lang="ts">
 import { SidebarGroup, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
 import { type NavItem } from '@/types';
-import { Link, usePage } from '@inertiajs/vue3';
+import { Link, router, usePage } from '@inertiajs/vue3';
+import { onMounted, onUnmounted } from 'vue';
+
+let interval: any;
+
+onMounted(() => {
+    interval = setInterval(() => {
+        // Ini bakal nge-refresh page.props (termasuk unread_count) tanpa reload halaman full
+        router.reload({ only: ['unread_count'] });
+    }, 10000); // samain 10 detik
+});
+
+onUnmounted(() => {
+    clearInterval(interval);
+});
 
 defineProps<{
     items: NavItem[];

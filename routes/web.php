@@ -1,13 +1,13 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
-use Inertia\Inertia;
 use App\Http\Controllers\BoardController;
-use App\Http\Controllers\MemberController;
+use App\Http\Controllers\CommentController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\HistoryController;
+use App\Http\Controllers\MemberController;
 use App\Http\Controllers\SubTaskController;
-use App\Http\Controllers\CommentController;
+use Illuminate\Support\Facades\Route;
+use Inertia\Inertia;
 
 Route::get('/', function () {
     return Inertia::render('Welcome');
@@ -35,8 +35,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::delete('/board/tasks/{taskId}', [BoardController::class, 'deleteTask'])->name('board.task.destroy');
 });
 
-
-//Member
+// Member
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/member', [MemberController::class, 'index'])->name('member.index');
     Route::delete('/member/{id}', [MemberController::class, 'destroy'])->name('member.destroy');
@@ -46,16 +45,16 @@ Route::middleware(['auth', 'verified'])->group(function () {
 Route::get('/history', [HistoryController::class, 'index'])->name('history.index');
 Route::get('/history/{id}', [HistoryController::class, 'show'])->name('history.show');
 
-//Detail Subtask
+// Detail Subtask
 Route::get('/subtask/{id}', [SubTaskController::class, 'show'])->name('subtask.show');
-Route::put('/subtask/{id}', [SubTaskController::class, 'update'])->name('subtask.update'); //update judal dan deskripsi subtask
+Route::put('/subtask/{id}', [SubTaskController::class, 'update'])->name('subtask.update'); // update judal dan deskripsi subtask
 Route::patch('/subtasks/{subtask}/close', [SubTaskController::class, 'close'])
-    ->name('subtasks.close'); //untuk close subtask
+    ->name('subtasks.close'); // untuk close subtask
 
 // ✅ TAMBAHKAN INI 🔥
 Route::post('/subtask/{subtask}/close', [SubTaskController::class, 'close'])
     ->middleware(['auth', 'verified'])
-    ->name('subtask.close'); 
+    ->name('subtask.close');
 // ...
 
 Route::middleware(['auth', 'verified'])->group(function () {
@@ -65,13 +64,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // ⭐ ROUTE MARK AS READ BARU ⭐
     Route::post('/subtask/{subtask}/mark-read', [SubTaskController::class, 'markAsRead'])
-    ->middleware(['auth', 'verified'])
-    ->name('subtask.markRead');
+        ->middleware(['auth', 'verified'])
+        ->name('subtask.markRead');
     // POST Comments (Store/Reply)
     Route::post('/subtasks/{subtask}/comments', [CommentController::class, 'store'])->name('comments.store');
-    
+
     // PUT/DELETE Comments (Edit/Hapus - Menggunakan Model Binding {comment})
-    Route::put('/comments/{comment}', [CommentController::class, 'update'])->name('comments.update'); 
+    Route::put('/comments/{comment}', [CommentController::class, 'update'])->name('comments.update');
     Route::delete('/comments/{comment}', [CommentController::class, 'destroy'])->name('comments.destroy');
 });
 

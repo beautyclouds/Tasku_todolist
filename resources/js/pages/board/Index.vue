@@ -1,8 +1,23 @@
 <script setup lang="ts">
 import AppLayout from '@/layouts/AppLayout.vue';
 import { type BreadcrumbItem } from '@/types';
-import { Head, router } from '@inertiajs/vue3';
-import { computed, ref, watch } from 'vue';
+import { router } from '@inertiajs/vue3';
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
+
+let interval: any;
+
+onMounted(() => {
+    // Tiap 10 detik, minta Inertia buat refresh data 'myBoards' dan 'collaborationBoards'
+    interval = setInterval(() => {
+        router.reload({
+            only: ['myBoards', 'collaborationBoards', 'unread_count'],
+        });
+    }, 10000); // 10 detik
+});
+
+onUnmounted(() => {
+    clearInterval(interval);
+});
 
 /**
  * Menghitung total komentar yang belum dibaca dari semua SubTask dalam satu Board Card.
@@ -11,14 +26,14 @@ import { computed, ref, watch } from 'vue';
  */
 // Definisikan tipe untuk SubTask (hanya properti yang dibutuhkan)
 type SubTask = {
-  unread_comments_count?: number;
+    unread_comments_count?: number;
 };
 
 // Menghitung total komentar yang belum dibaca dari semua SubTask
 const totalUnreadComments = (tasks: SubTask[] = []): number => {
-  return tasks.reduce((total: number, task: SubTask) => {
-    return total + (task.unread_comments_count ?? 0);
-  }, 0);
+    return tasks.reduce((total: number, task: SubTask) => {
+        return total + (task.unread_comments_count ?? 0);
+    }, 0);
 };
 
 const breadcrumbs: BreadcrumbItem[] = [{ title: 'Board', href: '/board' }];

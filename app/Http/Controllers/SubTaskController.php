@@ -4,8 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\SubTask;
 use App\Models\SubtaskReadStatus;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 
 class SubTaskController extends Controller
@@ -28,9 +28,7 @@ class SubTaskController extends Controller
         $lastReadAt = $subtask->readStatus() // (Kamu perlu relasi readStatus di Model SubTask.php)
             ->where('user_id', Auth::id())
             ->value('last_read_at');
-            
 
-        
         $card = $subtask->card;
 
         return inertia('subtask/SubTaskDetail', [
@@ -59,12 +57,20 @@ class SubTaskController extends Controller
 
     public function markAsRead(SubTask $subtask)
     {
-        // Cari atau buat status baca untuk user yang sedang login di subtask ini
-        $status = SubtaskReadStatus::updateOrCreate(
-            ['subtask_id' => $subtask->id, 'user_id' => Auth::id()],
-            ['last_read_at' => now()] // Update ke waktu sekarang
-        
+        $userId = Auth::id();
+
+        // 1. Update table pendamping (yang udah lo buat)
+        SubtaskReadStatus::updateOrCreate(
+            ['subtask_id' => $subtask->id, 'user_id' => $userId],
+            ['last_read_at' => now()]
         );
+
+        // 2. 🔥 Update kolom is_read di tabel comments (biar sinkron sama screenshot lo)
+        // Kita set is_read = 0 untuk semua pesan di subtask ini yang BUKAN dikirim oleh user login
+        $subtask->comments()
+            ->where('user_id', '!=', $userId)
+            ->where('is_read', 1)
+            ->update(['is_read' => 0]);
 
         return response()->json(['success' => true]);
     }
@@ -74,11 +80,10 @@ class SubTaskController extends Controller
         // 🔥 INI YANG PENTING
         $subtask->update([
             'is_close' => true,   // ← ini yang dipakai frontend
-            'is_done'  => true,   // biar checkbox centang
-            'closed_at'=> now(),
+            'is_done' => true,   // biar checkbox centang
+            'closed_at' => now(),
         ]);
 
         return back(); // ⬅️ WAJIB supaya Inertia reload
     }
-
 }

@@ -136,6 +136,19 @@ class CommentController extends Controller
         return response()->json(['message' => 'Comment updated successfully.', 'comment' => $comment], 200);
     }
 
+    public function markAsRead($subtaskId)
+    {
+        // Update semua pesan di subtask ini yang:
+        // 1. is_read-nya masih 1 (baru)
+        // 2. user_id-nya BUKAN user yang lagi login (biar gak ngebaca pesan sendiri)
+        Comment::where('subtask_id', $subtaskId)
+            ->where('user_id', '!=', auth()->id())
+            ->where('is_read', 1)
+            ->update(['is_read' => 0]);
+
+        return response()->json(['message' => 'Success']);
+    }
+
     public function destroy(Comment $comment)
     {
         // 1. Otorisasi (PENTING!)
