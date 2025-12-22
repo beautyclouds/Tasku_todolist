@@ -6,6 +6,7 @@ use Illuminate\Foundation\Inspiring;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 use Tighten\Ziggy\Ziggy;
+use App\Models\BoardCard;
 use App\Models\User;
 use Illuminate\Support\Arr; // Tambahkan ini jika kamu butuh fungsi array utility, tapi di sini belum dipakai.
 
@@ -30,6 +31,13 @@ class HandleInertiaRequests extends Middleware
             'auth' => [
                 'user' => $user, // Menggunakan $user yang sudah diambil
             ],
+
+            'unread_count' => $request->user() 
+    ? $request->user()->boards() // Ini bakal ngambil semua board si user (baik owner maupun member)
+        ->with('tasks')
+        ->get()
+        ->sum(fn($board) => $board->tasks->sum('unread_comments_count'))
+    : 0,
 
             'ziggy' => [
                 ...(new Ziggy)->toArray(),

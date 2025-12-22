@@ -75,4 +75,9 @@ class User extends Authenticatable
     {
         return $this->hasMany(Comment::class);
     }
+
+    public function boards()
+    {
+        return $this->belongsToMany(BoardCard::class, 'board_collaborator', 'user_id', 'board_card_id');
+    }
 }

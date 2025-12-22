@@ -13,6 +13,7 @@ class Comment extends Model
         'subtask_id',
         'user_id',
         'type',
+        'is_read',
         'message',
         'file_path',
         'file_name',

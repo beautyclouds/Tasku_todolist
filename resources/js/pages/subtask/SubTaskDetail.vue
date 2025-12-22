@@ -205,6 +205,8 @@ const ambilPesan = () => {
         console.log('Ambil Pesan');
         fetchComments();
     }, 10000);
+
+    // buat fungsi update is_read = 0 berdasar subtask & iduser jika is_read = 1;
 };
 // ============================
 // COMMENT SYSTEM

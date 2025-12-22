@@ -33,7 +33,7 @@ class CommentController extends Controller
     public function store(Request $request, $subtaskId)
     {
         // Pastikan user login
-        if (!Auth::check()) {
+        if (! Auth::check()) {
             return response()->json(['message' => 'Unauthenticated'], 401);
         }
 
@@ -66,7 +66,7 @@ class CommentController extends Controller
             ?? ($request->hasFile('file') ? 'file' : 'text');
 
         // Cegah komentar kosong
-        if (!$request->message && !$request->hasFile('file')) {
+        if (! $request->message && ! $request->hasFile('file')) {
             return response()->json([
                 'message' => 'Message or file is required',
             ], 422);
@@ -78,6 +78,7 @@ class CommentController extends Controller
             'user_id' => Auth::id(),
             'type' => $type,
             'message' => $request->message,
+            'is_read' => 1,
             'file_path' => $filePath,
             'file_name' => $fileName,
             'file_type' => $fileType,
@@ -86,16 +87,16 @@ class CommentController extends Controller
         ]);
 
         $actor = $request->user();
-        
-    // Ambil pembuat Subtask sebagai penerima notifikasi
-    $recipient = $subtask->creator; 
-    
-    // Pastikan penerima bukan si pengirim komentar
-    if ($recipient) { // <-- Pastikan objek $recipient ada (tidak NULL)
-            
+
+        // Ambil pembuat Subtask sebagai penerima notifikasi
+        $recipient = $subtask->creator;
+
+        // Pastikan penerima bukan si pengirim komentar
+        if ($recipient) { // <-- Pastikan objek $recipient ada (tidak NULL)
+
             // Pastikan penerima bukan si pengirim komentar
             if ($recipient->id !== $actor->id) {
-                
+
                 // Memicu Notifikasi!
                 $recipient->notify(
                     new NewCommentOnSubtask($actor, $comment, $subtask, $subtask->card)
@@ -130,7 +131,7 @@ class CommentController extends Controller
         $comment->update([
             'message' => $validatedData['message'],
         ]);
-        
+
         // 4. Beri respon sukses
         return response()->json(['message' => 'Comment updated successfully.', 'comment' => $comment], 200);
     }
@@ -145,7 +146,7 @@ class CommentController extends Controller
 
         // 2. Hapus Komentar
         $comment->delete();
-        
+
         // 3. Beri respon sukses
         return response()->json(['message' => 'Comment deleted successfully.'], 200);
     }

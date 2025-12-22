@@ -46,7 +46,7 @@ class BoardCard extends Model
 
     public function members(): BelongsToMany
     {
-        return $this->belongsToMany(User::class, 'board_card_user', 'board_card_id', 'user_id');
+        return $this->belongsToMany(User::class);
     }
 
 }

@@ -3,12 +3,16 @@ import NavMain from '@/components/NavMain.vue';
 import NavUser from '@/components/NavUser.vue';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
 import { type NavItem } from '@/types';
-import { Link } from '@inertiajs/vue3';
+import { Link, usePage } from '@inertiajs/vue3';
 import { BookOpen, Clock, LayoutGrid, Users } from 'lucide-vue-next';
+import { computed } from 'vue';
 
 import AppLogo from './AppLogo.vue';
 
-const mainNavItems: NavItem[] = [
+const page = usePage();
+const totalUnread = computed(() => page.props.unread_count as number);
+
+const mainNavItems = computed((): NavItem[] => [
     {
         title: 'Dashboard',
         href: '/dashboard',
@@ -18,6 +22,8 @@ const mainNavItems: NavItem[] = [
         title: 'Board',
         href: '/board',
         icon: BookOpen,
+        // Kita tambahin properti badge di sini
+        badge: totalUnread.value > 0 ? totalUnread.value : null,
     },
     {
         title: 'Member',
@@ -29,7 +35,7 @@ const mainNavItems: NavItem[] = [
         href: '/history',
         icon: Clock,
     },
-];
+]);
 </script>
 
 <template>

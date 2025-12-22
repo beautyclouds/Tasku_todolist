@@ -20,6 +20,13 @@ const page = usePage();
                         <component :is="item.icon" />
                         <span>{{ item.title }}</span>
                     </Link>
+
+                    <span
+                        v-if="item.badge"
+                        class="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white"
+                    >
+                        {{ item.badge }}
+                    </span>
                 </SidebarMenuButton>
             </SidebarMenuItem>
         </SidebarMenu>
